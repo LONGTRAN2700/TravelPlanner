@@ -386,6 +386,7 @@
         flex-direction: column;
         gap: 18px;
         width: 100%;
+        animation: none;
       }
 
       .place-detail-wrapper-inner {
@@ -707,6 +708,55 @@
         transform: scale(1.02);
         box-shadow: 0 24px 38px rgba(15, 23, 42, 0.12);
         z-index: 1;
+      }
+
+      @keyframes slideInRight {
+        from {
+          opacity: 0;
+          transform: translateX(100px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes slideInLeft {
+        from {
+          opacity: 0;
+          transform: translateX(-100px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .gallery-item {
+        animation: none;
+      }
+
+      .gallery-item.slide-next {
+        animation: slideInRight 0.4s ease-out;
+      }
+
+      .gallery-item.slide-prev {
+        animation: slideInLeft 0.4s ease-out;
+      }
+
+      .place-detail-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        width: 100%;
+      }
+
+      .place-detail-wrapper.slide-next {
+        animation: slideInRight 0.4s ease-out;
+      }
+
+      .place-detail-wrapper.slide-prev {
+        animation: slideInLeft 0.4s ease-out;
       }
 
       .gallery-item img {
@@ -2590,11 +2640,26 @@
         );
         const nextIndex = currentIndex + direction;
         if (nextIndex < 0 || nextIndex >= places.length) return;
-        openPlaceDetail(
-          selectedCategoryId,
-          places[nextIndex].id,
-          placeDetailShowNav,
-        );
+
+        // Add animation class to the wrapper
+        const wrapper = document.querySelector(".place-detail-wrapper");
+        if (wrapper) {
+          wrapper.classList.remove("slide-next", "slide-prev");
+          if (direction > 0) {
+            wrapper.classList.add("slide-next");
+          } else {
+            wrapper.classList.add("slide-prev");
+          }
+        }
+
+        // Update with slight delay to show animation
+        setTimeout(() => {
+          openPlaceDetail(
+            selectedCategoryId,
+            places[nextIndex].id,
+            placeDetailShowNav,
+          );
+        }, 200);
       }
 
       function handlePlaceDetailTouchStart(event) {
@@ -2660,8 +2725,10 @@
           indicators.querySelectorAll(".gallery-indicator").forEach((btn) => {
             btn.addEventListener("click", () => {
               const targetIndex = Number(btn.dataset.index);
+              const direction =
+                targetIndex > currentGalleryIndex ? "next" : "prev";
               scrollToGalleryIndex(targetIndex);
-              setActiveGalleryIndex(targetIndex);
+              setActiveGalleryIndex(targetIndex, direction);
             });
           });
         }
@@ -2674,17 +2741,30 @@
 
         grid.onscroll = () => updateGalleryActiveOnScroll(grid, indicators);
         grid.scrollLeft = 0;
-        setActiveGalleryIndex(0);
+        setActiveGalleryIndex(0, null);
       }
 
-      function setActiveGalleryIndex(index) {
+      function setActiveGalleryIndex(index, direction = null) {
         const grid = document.getElementById("galleryGrid");
         const indicators = document.getElementById("galleryIndicators");
         const items = grid?.querySelectorAll(".gallery-item") || [];
         const dots = indicators?.querySelectorAll(".gallery-indicator") || [];
 
         items.forEach((item, itemIndex) => {
-          item.classList.toggle("active", itemIndex === index);
+          // Remove animation classes
+          item.classList.remove("slide-next", "slide-prev");
+
+          if (itemIndex === index) {
+            item.classList.add("active");
+            // Add animation class for the active item
+            if (direction === "next") {
+              item.classList.add("slide-next");
+            } else if (direction === "prev") {
+              item.classList.add("slide-prev");
+            }
+          } else {
+            item.classList.remove("active");
+          }
         });
         dots.forEach((dot, dotIndex) => {
           dot.classList.toggle("active", dotIndex === index);
