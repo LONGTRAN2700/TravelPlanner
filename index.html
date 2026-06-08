@@ -1499,6 +1499,7 @@
         }
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
   </head>
   <body>
     <div class="app">
@@ -1772,7 +1773,7 @@
             + Thêm ngày
           </button>
           <button type="button" id="btnExportData" class="btn btn-secondary">
-            Xuất JSON
+            Xuất Excel
           </button>
         </div>
         <div id="itineraryDays"></div>
@@ -2238,7 +2239,6 @@
           .map((category) => {
             const places = category.places || [];
             const placePreview = places
-              .slice(0, 3)
               .map(
                 (place) => `
               <div class='place-summary-item'>
@@ -3152,14 +3152,108 @@
       }
 
       function exportData() {
-        const payload = JSON.stringify(state, null, 2);
-        const blob = new Blob([payload], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "travel-planner-data.json";
-        a.click();
-        URL.revokeObjectURL(url);
+        const trip = getTrip(selectedTripId);
+        if (!trip) {
+          alert("Vui lòng chọn một chuyến đi");
+          return;
+        }
+
+        const workbook = XLSX.utils.book_new();
+        let sheetData = [];
+
+        // Title
+        sheetData.push([trip.name]);
+        sheetData.push([]);
+        sheetData.push([`Mô tả: ${trip.description}`]);
+        sheetData.push([]);
+        sheetData.push([]);
+
+        // Categories and Places
+        trip.categories.forEach((category, catIdx) => {
+          sheetData.push([
+            `${category.icon || "📌"} ${category.name} (${(category.places || []).length} địa điểm)`,
+          ]);
+          sheetData.push([]);
+
+          (category.places || []).forEach((place, placeIdx) => {
+            sheetData.push([
+              placeIdx + 1,
+              place.name,
+              `⭐ ${place.rating || "-"}`,
+              place.price || "-",
+              place.images.length,
+              place.tags ? place.tags.join(", ") : "-",
+            ]);
+            if (place.description) {
+              sheetData.push(["", `Mô tả: ${place.description}`]);
+            }
+          });
+
+          sheetData.push([]);
+          sheetData.push([]);
+        });
+
+        // Itinerary
+        if (trip.itineraryDays && trip.itineraryDays.length > 0) {
+          sheetData.push([]);
+          sheetData.push(["LỊCH TRÌNH"]);
+          sheetData.push([]);
+
+          trip.itineraryDays.forEach((day) => {
+            sheetData.push([`📅 ${day.name}`]);
+            (day.items || []).forEach((item, idx) => {
+              const place = trip.categories
+                .find((c) => c.id === item.categoryId)
+                ?.places.find((p) => p.id === item.placeId);
+              sheetData.push([
+                `${idx + 1}. ${place?.name || "N/A"}`,
+                item.note || "-",
+              ]);
+            });
+            sheetData.push([]);
+          });
+        }
+
+        const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+        // Styling
+        const headerStyle = {
+          font: { bold: true, size: 16, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2563EB" } },
+          alignment: { horizontal: "left", vertical: "center" },
+        };
+
+        const categoryStyle = {
+          font: { bold: true, size: 13, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "3B82F6" } },
+          alignment: { horizontal: "left", vertical: "center" },
+        };
+
+        const itineraryTitleStyle = {
+          font: { bold: true, size: 12, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "10B981" } },
+          alignment: { horizontal: "left", vertical: "center" },
+        };
+
+        // Apply header style to title
+        worksheet["A1"] = {
+          ...worksheet["A1"],
+          s: headerStyle,
+        };
+
+        // Auto column width
+        const maxWidth = 50;
+        worksheet["!cols"] = [
+          { wch: 5 },
+          { wch: 25 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 8 },
+          { wch: maxWidth },
+        ];
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Travel Plan");
+        XLSX.writeFile(workbook, `${trip.name}-lich-trinh.xlsx`);
       }
 
       function compressImage(file) {
