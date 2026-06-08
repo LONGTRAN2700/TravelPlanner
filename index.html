@@ -1468,8 +1468,12 @@
         }
 
         .btn {
-          padding: 8px 12px;
+          padding: 10px 14px;
           font-size: 13px;
+          min-height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .place-cover img {
@@ -3158,102 +3162,127 @@
           return;
         }
 
-        const workbook = XLSX.utils.book_new();
-        let sheetData = [];
+        const btnExport = document.getElementById("btnExportData");
+        const originalText = btnExport.textContent;
+        btnExport.disabled = true;
+        btnExport.textContent = "Đang xuất...";
+        btnExport.style.opacity = "0.6";
 
-        // Title
-        sheetData.push([trip.name]);
-        sheetData.push([]);
-        sheetData.push([`Mô tả: ${trip.description}`]);
-        sheetData.push([]);
-        sheetData.push([]);
+        // Use setTimeout to allow UI update and prevent blocking on mobile
+        setTimeout(() => {
+          try {
+            const workbook = XLSX.utils.book_new();
+            let sheetData = [];
 
-        // Categories and Places
-        trip.categories.forEach((category, catIdx) => {
-          sheetData.push([
-            `${category.icon || "📌"} ${category.name} (${(category.places || []).length} địa điểm)`,
-          ]);
-          sheetData.push([]);
-
-          (category.places || []).forEach((place, placeIdx) => {
-            sheetData.push([
-              placeIdx + 1,
-              place.name,
-              `⭐ ${place.rating || "-"}`,
-              place.price || "-",
-              place.images.length,
-              place.tags ? place.tags.join(", ") : "-",
-            ]);
-            if (place.description) {
-              sheetData.push(["", `Mô tả: ${place.description}`]);
-            }
-          });
-
-          sheetData.push([]);
-          sheetData.push([]);
-        });
-
-        // Itinerary
-        if (trip.itineraryDays && trip.itineraryDays.length > 0) {
-          sheetData.push([]);
-          sheetData.push(["LỊCH TRÌNH"]);
-          sheetData.push([]);
-
-          trip.itineraryDays.forEach((day) => {
-            sheetData.push([`📅 ${day.name}`]);
-            (day.items || []).forEach((item, idx) => {
-              const place = trip.categories
-                .find((c) => c.id === item.categoryId)
-                ?.places.find((p) => p.id === item.placeId);
-              sheetData.push([
-                `${idx + 1}. ${place?.name || "N/A"}`,
-                item.note || "-",
-              ]);
-            });
+            // Title
+            sheetData.push([trip.name]);
             sheetData.push([]);
-          });
-        }
+            sheetData.push([`Mô tả: ${trip.description}`]);
+            sheetData.push([]);
+            sheetData.push([]);
 
-        const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+            // Categories and Places
+            trip.categories.forEach((category, catIdx) => {
+              sheetData.push([
+                `${category.icon || "📌"} ${category.name} (${(category.places || []).length} địa điểm)`,
+              ]);
+              sheetData.push([]);
 
-        // Styling
-        const headerStyle = {
-          font: { bold: true, size: 16, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "2563EB" } },
-          alignment: { horizontal: "left", vertical: "center" },
-        };
+              (category.places || []).forEach((place, placeIdx) => {
+                sheetData.push([
+                  placeIdx + 1,
+                  place.name,
+                  `⭐ ${place.rating || "-"}`,
+                  place.price || "-",
+                  place.images.length,
+                  place.tags ? place.tags.join(", ") : "-",
+                ]);
+                if (place.description) {
+                  sheetData.push(["", `Mô tả: ${place.description}`]);
+                }
+              });
 
-        const categoryStyle = {
-          font: { bold: true, size: 13, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "3B82F6" } },
-          alignment: { horizontal: "left", vertical: "center" },
-        };
+              sheetData.push([]);
+              sheetData.push([]);
+            });
 
-        const itineraryTitleStyle = {
-          font: { bold: true, size: 12, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "10B981" } },
-          alignment: { horizontal: "left", vertical: "center" },
-        };
+            // Itinerary
+            if (trip.itineraryDays && trip.itineraryDays.length > 0) {
+              sheetData.push([]);
+              sheetData.push(["LỊCH TRÌNH"]);
+              sheetData.push([]);
 
-        // Apply header style to title
-        worksheet["A1"] = {
-          ...worksheet["A1"],
-          s: headerStyle,
-        };
+              trip.itineraryDays.forEach((day) => {
+                sheetData.push([`📅 ${day.name}`]);
+                (day.items || []).forEach((item, idx) => {
+                  const place = trip.categories
+                    .find((c) => c.id === item.categoryId)
+                    ?.places.find((p) => p.id === item.placeId);
+                  sheetData.push([
+                    `${idx + 1}. ${place?.name || "N/A"}`,
+                    item.note || "-",
+                  ]);
+                });
+                sheetData.push([]);
+              });
+            }
 
-        // Auto column width
-        const maxWidth = 50;
-        worksheet["!cols"] = [
-          { wch: 5 },
-          { wch: 25 },
-          { wch: 12 },
-          { wch: 12 },
-          { wch: 8 },
-          { wch: maxWidth },
-        ];
+            const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
 
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Travel Plan");
-        XLSX.writeFile(workbook, `${trip.name}-lich-trinh.xlsx`);
+            // Styling
+            const headerStyle = {
+              font: { bold: true, size: 16, color: { rgb: "FFFFFF" } },
+              fill: { fgColor: { rgb: "2563EB" } },
+              alignment: { horizontal: "left", vertical: "center" },
+            };
+
+            const categoryStyle = {
+              font: { bold: true, size: 13, color: { rgb: "FFFFFF" } },
+              fill: { fgColor: { rgb: "3B82F6" } },
+              alignment: { horizontal: "left", vertical: "center" },
+            };
+
+            const itineraryTitleStyle = {
+              font: { bold: true, size: 12, color: { rgb: "FFFFFF" } },
+              fill: { fgColor: { rgb: "10B981" } },
+              alignment: { horizontal: "left", vertical: "center" },
+            };
+
+            // Apply header style to title
+            worksheet["A1"] = {
+              ...worksheet["A1"],
+              s: headerStyle,
+            };
+
+            // Auto column width
+            const maxWidth = 50;
+            worksheet["!cols"] = [
+              { wch: 5 },
+              { wch: 25 },
+              { wch: 12 },
+              { wch: 12 },
+              { wch: 8 },
+              { wch: maxWidth },
+            ];
+
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Travel Plan");
+            XLSX.writeFile(workbook, `${trip.name}-lich-trinh.xlsx`);
+
+            // Success feedback
+            btnExport.textContent = "✓ Đã xuất";
+            setTimeout(() => {
+              btnExport.textContent = originalText;
+              btnExport.disabled = false;
+              btnExport.style.opacity = "1";
+            }, 1500);
+          } catch (error) {
+            console.error("Export error:", error);
+            alert("Lỗi xuất file. Vui lòng thử lại.");
+            btnExport.textContent = originalText;
+            btnExport.disabled = false;
+            btnExport.style.opacity = "1";
+          }
+        }, 100);
       }
 
       function compressImage(file) {
