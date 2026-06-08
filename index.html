@@ -1355,14 +1355,28 @@
           height: 8px;
         }
 
-        .itinerary-day {
-          padding: 14px;
-          margin-bottom: 12px;
-          border-radius: 14px;
-        }
+      .storage-info-block {
+        padding: 12px;
+        border-radius: 8px;
+        color: var(--text-secondary);
+        font-size: 13px;
+        background: var(--bg);
+        margin-bottom: 12px;
+      }
 
-        .day-title h3 {
-          font-size: 18px;
+      .storage-warning-block {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+        color: var(--text);
+      }
+
+      body.dark .storage-warning-block {
+        background: #7f1d1d;
+        border-color: #dc2626;
+      }
         }
 
         .collapse-btn {
@@ -2744,6 +2758,22 @@
         const grid = document.getElementById("galleryGrid");
         const indicators = document.getElementById("galleryIndicators");
         galleryImages = place.images || [];
+
+        // Tính dung lượng sử dụng
+        const storageUsage = getStorageUsage();
+        const storageUsageMB = Math.round(storageUsage / 1024 / 1024);
+        const storageLimitMB = Math.round(
+          IMAGE_CONFIG.STORAGE_LIMIT / 1024 / 1024,
+        );
+        const storagePercent = Math.round(
+          (storageUsage / IMAGE_CONFIG.STORAGE_LIMIT) * 100,
+        );
+
+        const storageWarning =
+          storagePercent > 80
+            ? `<div style="background:#fee2e2;border:1px solid #fca5a5;padding:12px;border-radius:8px;margin-bottom:12px;color:var(--text);"><strong>⚠️ Cảnh báo:</strong> Bạn đang sử dụng ${storagePercent}% dung lượng (${storageUsageMB}/${storageLimitMB}MB). Hãy xóa ảnh cũ nếu muốn thêm ảnh mới.</div>`
+            : `<div style="padding:12px;border-radius:8px;margin-bottom:12px;color:var(--text-secondary);font-size:13px;">Dung lượng: ${storageUsageMB}/${storageLimitMB}MB (${storagePercent}%)</div>`;
+
         if (!galleryImages.length) {
           grid.innerHTML = `
             <div class="gallery-item">
@@ -2754,6 +2784,21 @@
             </div>
           `;
           if (indicators) indicators.innerHTML = "";
+          // Thêm thông báo dung lượng vào phía trên
+          const toolbar = document.querySelector(".gallery-toolbar");
+          if (toolbar) {
+            const existing = toolbar.querySelector(
+              ".storage-info-block, .storage-warning-block",
+            );
+            if (existing) existing.remove();
+            const div = document.createElement("div");
+            div.className =
+              storagePercent > 80
+                ? "storage-warning-block"
+                : "storage-info-block";
+            div.innerHTML = storageWarning;
+            toolbar.insertBefore(div, toolbar.firstChild);
+          }
           return;
         }
 
@@ -2797,6 +2842,22 @@
         grid.onscroll = () => updateGalleryActiveOnScroll(grid, indicators);
         grid.scrollLeft = 0;
         setActiveGalleryIndex(0, null);
+
+        // Thêm thông báo dung lượng vào phía trên
+        const toolbar = document.querySelector(".gallery-toolbar");
+        if (toolbar) {
+          const existing = toolbar.querySelector(
+            ".storage-info-block, .storage-warning-block",
+          );
+          if (existing) existing.remove();
+          const div = document.createElement("div");
+          div.className =
+            storagePercent > 80
+              ? "storage-warning-block"
+              : "storage-info-block";
+          div.innerHTML = storageWarning;
+          toolbar.insertBefore(div, toolbar.firstChild);
+        }
       }
 
       function setActiveGalleryIndex(index, direction = null) {
@@ -2859,25 +2920,129 @@
       async function uploadGalleryImages() {
         const uploadInput = document.getElementById("galleryUpload");
         const files = Array.from(uploadInput.files || []);
+
         if (!files.length) {
           alert("Chọn ít nhất 1 hình ảnh.");
           return;
         }
+
         const category = getCategory(
           getTrip(selectedTripId),
           selectedCategoryId,
         );
         const place = getPlace(category, selectedPlaceId);
-        for (const file of files) {
-          const data = await compressImage(file);
-          place.images.push({ id: uuid(), data });
+
+        // Kiểm tra số lượng ảnh hiện tại
+        const currentImageCount = getPlaceImageCount(place);
+        if (
+          currentImageCount + files.length >
+          IMAGE_CONFIG.MAX_IMAGES_PER_PLACE
+        ) {
+          alert(
+            `Tối đa ${IMAGE_CONFIG.MAX_IMAGES_PER_PLACE} ảnh mỗi địa điểm. Bạn có ${currentImageCount} ảnh, chỉ có thể thêm ${IMAGE_CONFIG.MAX_IMAGES_PER_PLACE - currentImageCount} ảnh nữa.`,
+          );
+          return;
         }
-        saveState();
-        uploadInput.value = "";
-        const uploadInfo = document.getElementById("galleryFileInfo");
-        if (uploadInfo) uploadInfo.textContent = "Chưa chọn file nào";
-        renderGallery();
-        renderStats(getTrip(selectedTripId));
+
+        // Kiểm tra tổng dung lượng
+        const currentStorageUsage = getStorageUsage();
+        if (currentStorageUsage >= IMAGE_CONFIG.STORAGE_LIMIT) {
+          alert(
+            `Bạn đã sử dụng hết dung lượng lưu trữ (${Math.round(IMAGE_CONFIG.STORAGE_LIMIT / 1024 / 1024)}MB). Vui lòng xóa một số ảnh cũ.`,
+          );
+          return;
+        }
+
+        // Tính toán kích thước dự kiến
+        const estimatedNewSize = Array.from(files).reduce(
+          (total, file) => total + file.size * 1.33,
+          0,
+        ); // base64 overhead
+        if (
+          currentStorageUsage + estimatedNewSize >
+          IMAGE_CONFIG.STORAGE_LIMIT
+        ) {
+          const remainingMB = Math.round(
+            (IMAGE_CONFIG.STORAGE_LIMIT - currentStorageUsage) / 1024 / 1024,
+          );
+          alert(
+            `Dung lượng không đủ. Dung lượng còn lại: ~${remainingMB}MB. Vui lòng chọn ảnh nhỏ hơn hoặc xóa ảnh cũ.`,
+          );
+          return;
+        }
+
+        // Tạo nút cancel
+        const btnUploadGallery = document.getElementById("btnUploadGallery");
+        const originalText = btnUploadGallery.textContent;
+        let shouldCancel = false;
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "btn btn-danger";
+        cancelBtn.textContent = "Hủy upload";
+        cancelBtn.onclick = () => {
+          shouldCancel = true;
+          cancelBtn.remove();
+          btnUploadGallery.disabled = false;
+          btnUploadGallery.textContent = originalText;
+        };
+
+        btnUploadGallery.disabled = true;
+        btnUploadGallery.textContent = `Đang upload (0/${files.length})...`;
+        btnUploadGallery.parentNode.insertBefore(
+          cancelBtn,
+          btnUploadGallery.nextSibling,
+        );
+
+        let successCount = 0;
+        let errorMessage = "";
+
+        try {
+          for (let i = 0; i < files.length; i++) {
+            if (shouldCancel) break;
+
+            try {
+              const file = files[i];
+              const data = await compressImage(file);
+              place.images.push({ id: uuid(), data });
+              successCount++;
+              btnUploadGallery.textContent = `Đang upload (${successCount}/${files.length})...`;
+            } catch (err) {
+              errorMessage += `\n❌ ${files[i].name}: ${err.message}`;
+            }
+          }
+
+          if (successCount > 0) {
+            saveState();
+            uploadInput.value = "";
+            const uploadInfo = document.getElementById("galleryFileInfo");
+            if (uploadInfo) uploadInfo.textContent = "Chưa chọn file nào";
+            renderGallery();
+            renderStats(getTrip(selectedTripId));
+
+            const storageUsage = getStorageUsage();
+            const storageUsageMB = Math.round(storageUsage / 1024 / 1024);
+            const storageLimitMB = Math.round(
+              IMAGE_CONFIG.STORAGE_LIMIT / 1024 / 1024,
+            );
+
+            if (errorMessage) {
+              alert(
+                `Upload thành công: ${successCount} ảnh\n\nCó lỗi xảy ra:${errorMessage}\n\nDung lượng sử dụng: ${storageUsageMB}/${storageLimitMB}MB`,
+              );
+            } else {
+              alert(
+                `Upload thành công: ${successCount} ảnh\nDung lượng sử dụng: ${storageUsageMB}/${storageLimitMB}MB`,
+              );
+            }
+          } else if (errorMessage) {
+            alert(`Upload thất bại. Lỗi:${errorMessage}`);
+          }
+        } finally {
+          cancelBtn.remove();
+          btnUploadGallery.disabled = false;
+          btnUploadGallery.textContent = originalText;
+        }
       }
 
       function deleteGalleryImage(index) {
@@ -3294,23 +3459,108 @@
         }, 100);
       }
 
+      // Cấu hình lưu trữ hình ảnh
+      const IMAGE_CONFIG = {
+        MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB mỗi file
+        MAX_IMAGES_PER_PLACE: 100, // Giới hạn 100 ảnh mỗi địa điểm
+        STORAGE_LIMIT: 50 * 1024 * 1024, // Giới hạn 50MB cho tất cả ảnh
+        MAX_WIDTH: 1024, // Giảm từ 1200 xuống 1024
+        JPEG_QUALITY: 0.65, // Giảm từ 0.75 xuống 0.65
+      };
+
+      function getStorageUsage() {
+        let totalSize = 0;
+        state.trips.forEach((trip) => {
+          if (trip.categories) {
+            trip.categories.forEach((category) => {
+              if (category.places) {
+                category.places.forEach((place) => {
+                  if (place.images) {
+                    place.images.forEach((img) => {
+                      if (img.data) {
+                        // Ước tính kích thước base64
+                        totalSize += img.data.length * 0.75; // base64 là 4/3 kích thước
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+        });
+        return totalSize;
+      }
+
+      function getPlaceImageCount(place) {
+        return place.images ? place.images.length : 0;
+      }
+
       function compressImage(file) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
+          // Kiểm tra kích thước file
+          if (file.size > IMAGE_CONFIG.MAX_FILE_SIZE) {
+            reject(
+              new Error(
+                `Kích thước tệp quá lớn. Giới hạn là ${Math.round(IMAGE_CONFIG.MAX_FILE_SIZE / 1024 / 1024)}MB, tệp của bạn là ${Math.round(file.size / 1024 / 1024)}MB.`,
+              ),
+            );
+            return;
+          }
+
           const reader = new FileReader();
+          reader.onerror = () => {
+            reject(new Error("Lỗi đọc tệp ảnh"));
+          };
+
           reader.onload = (event) => {
             const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement("canvas");
-              const maxWidth = 1200;
-              const scale = Math.min(1, maxWidth / img.width);
-              canvas.width = img.width * scale;
-              canvas.height = img.height * scale;
-              const ctx = canvas.getContext("2d");
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              resolve(canvas.toDataURL("image/jpeg", 0.75));
+            img.onerror = () => {
+              reject(new Error("Tệp không phải là ảnh hợp lệ"));
             };
+
+            img.onload = () => {
+              try {
+                const canvas = document.createElement("canvas");
+                const scale = Math.min(1, IMAGE_CONFIG.MAX_WIDTH / img.width);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext("2d");
+
+                if (!ctx) {
+                  reject(new Error("Không thể tạo canvas"));
+                  return;
+                }
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Thử WebP trước (nén tốt hơn), fallback sang JPEG
+                let compressedData = null;
+                try {
+                  compressedData = canvas.toDataURL("image/webp", 0.6);
+                } catch (e) {
+                  compressedData = canvas.toDataURL(
+                    "image/jpeg",
+                    IMAGE_CONFIG.JPEG_QUALITY,
+                  );
+                }
+
+                // Nếu vẫn lớn, thử nén thêm
+                if (compressedData.length > 2 * 1024 * 1024) {
+                  compressedData = canvas.toDataURL(
+                    "image/jpeg",
+                    IMAGE_CONFIG.JPEG_QUALITY * 0.7,
+                  );
+                }
+
+                resolve(compressedData);
+              } catch (err) {
+                reject(new Error("Lỗi nén ảnh: " + err.message));
+              }
+            };
+
             img.src = event.target.result;
           };
+
           reader.readAsDataURL(file);
         });
       }
