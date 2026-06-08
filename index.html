@@ -1,0 +1,3123 @@
+﻿<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #1f2937;
+        --text-secondary: #6b7280;
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --border: #e5e7eb;
+        --danger: #ef4444;
+        --success: #10b981;
+        --shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+      }
+
+      body.dark {
+        --bg: #0f172a;
+        --card: #111827;
+        --text: #f8fafc;
+        --text-secondary: #94a3b8;
+        --primary: #3b82f6;
+        --primary-hover: #2563eb;
+        --border: #334155;
+        --shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Inter", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .app {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        width: 320px;
+        border-right: 1px solid var(--border);
+        background: var(--card);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar-header {
+        padding: 24px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .logo {
+        font-size: 24px;
+        font-weight: 800;
+      }
+
+      .logo span {
+        color: var(--primary);
+      }
+
+      .sidebar-actions {
+        padding: 20px;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 14px;
+        padding: 12px 18px;
+        transition: 0.2s;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-hover);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+
+      .btn-danger {
+        background: var(--danger);
+        color: white;
+      }
+
+      .btn-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--card);
+      }
+
+      .trip-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 16px 16px;
+      }
+
+      .trip-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 18px;
+        margin: 12px 0;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .trip-card.active {
+        border-color: var(--primary);
+        box-shadow: var(--shadow);
+      }
+
+      .trip-card:hover {
+        transform: translateY(-1px);
+      }
+
+      .trip-card h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .trip-card p {
+        margin: 8px 0 0;
+        color: var(--text-secondary);
+      }
+
+      .trip-card .trip-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+        padding: 0 24px;
+        min-height: 72px;
+        gap: 16px;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .sync-status {
+        color: var(--text-secondary);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .top-actions button.btn-secondary {
+        min-width: 110px;
+      }
+
+      .page-title {
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 28px 32px;
+      }
+
+      .empty-state {
+        min-height: calc(100vh - 72px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 16px;
+      }
+
+      .empty-state h2 {
+        font-size: 28px;
+      }
+
+      .empty-state p {
+        color: var(--text-secondary);
+        max-width: 420px;
+      }
+
+      .hero {
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        border-radius: 24px;
+        padding: 28px;
+        color: white;
+        display: grid;
+        gap: 12px;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: 34px;
+      }
+
+      .hero p {
+        margin: 0;
+        opacity: 0.9;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(140px, 1fr));
+        gap: 18px;
+        margin-top: 24px;
+      }
+
+      .stat-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .stat-number {
+        font-size: 28px;
+        font-weight: 800;
+      }
+
+      .stat-label {
+        margin-top: 8px;
+        color: var(--text-secondary);
+      }
+
+      .trip-toolbar {
+        margin-top: 28px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .search-box {
+        flex: 1;
+        min-width: 240px;
+      }
+
+      .search-box input {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
+      }
+
+      .section-title {
+        margin: 34px 0 18px;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+      }
+
+      .category-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-shadow: var(--shadow);
+      }
+
+      .category-card h3 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 18px;
+      }
+
+      .category-card p {
+        margin: 0;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+
+      .category-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .category-card .place-summary {
+        display: grid;
+        gap: 10px;
+      }
+
+      .place-summary-item {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px 14px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .place-item-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .place-item-main {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .place-item-meta {
+        color: var(--text-secondary);
+        font-size: 13px;
+      }
+
+      .place-item-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .place-summary-item:hover {
+        background: rgba(37, 99, 235, 0.05);
+      }
+
+      .place-detail-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        width: 100%;
+      }
+
+      .place-detail-wrapper-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        width: 100%;
+      }
+
+      .place-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        width: 100%;
+      }
+
+      .place-detail-nav-row {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        align-items: center;
+        width: 100%;
+      }
+
+      .detail-nav {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .detail-counter {
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+
+      .place-detail-section {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .section-block {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .place-detail-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        text-align: center;
+        width: 100%;
+      }
+
+      .place-detail-title {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+        width: 100%;
+      }
+
+      .place-detail-title strong {
+        font-size: 24px;
+        font-weight: 700;
+        display: block;
+      }
+
+      .place-detail-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .place-detail-meta {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        flex-wrap: wrap;
+        color: var(--text-secondary);
+        font-size: 14px;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .place-detail-meta span {
+        display: inline-flex;
+        gap: 6px;
+        background: rgba(37, 99, 235, 0.08);
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+      }
+
+      .place-detail-description {
+        line-height: 1.8;
+        color: var(--text);
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        text-align: center;
+      }
+
+      .place-detail-nav-button {
+        width: 48px;
+        height: 48px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(37, 99, 235, 0.12);
+        color: var(--text);
+        font-size: 28px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      .place-detail-nav-button:hover {
+        background: rgba(37, 99, 235, 0.18);
+      }
+
+      .place-detail-nav-button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      .place-cover-nav:hover {
+        background: rgba(255, 255, 255, 0.32);
+      }
+
+      .place-cover-nav:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+
+      .place-detail .place-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .detail-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .detail-meta {
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+
+      .detail-description {
+        line-height: 1.75;
+      }
+
+      .gallery-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        width: 100%;
+      }
+
+      .gallery-upload-input {
+        display: none;
+      }
+
+      .gallery-upload-label,
+      #btnUploadGallery {
+        min-width: 160px;
+        padding: 12px 18px;
+        border-radius: 16px;
+        border: 1px solid transparent;
+        transition:
+          transform 0.18s ease,
+          box-shadow 0.18s ease,
+          background 0.18s ease;
+      }
+
+      .gallery-upload-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary);
+        font-weight: 700;
+        border-color: rgba(59, 130, 246, 0.24);
+        box-shadow: 0 16px 28px rgba(59, 130, 246, 0.08);
+        cursor: pointer;
+      }
+
+      .gallery-upload-label:hover {
+        transform: translateY(-1px);
+        background: rgba(59, 130, 246, 0.16);
+      }
+
+      #btnUploadGallery {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: var(--primary);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 16px 28px rgba(37, 99, 235, 0.18);
+      }
+
+      #btnUploadGallery:hover {
+        transform: translateY(-1px);
+        background: var(--primary-hover);
+      }
+
+      .gallery-upload-label svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .gallery-upload-info {
+        flex: 1;
+        min-width: 160px;
+        color: var(--text-secondary);
+        font-size: 14px;
+        text-align: right;
+      }
+
+      .gallery-toolbar > * {
+        flex-shrink: 0;
+      }
+
+      .gallery-delete {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--danger);
+        font-size: 18px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        line-height: 1;
+        cursor: pointer;
+        transition:
+          transform 0.18s ease,
+          background 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+
+      .gallery-delete:hover {
+        transform: translateY(-1px);
+        background: rgba(255, 255, 255, 1);
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.2);
+      }
+
+      .gallery-grid {
+        display: flex;
+        gap: 16px;
+        margin-top: 20px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        flex-wrap: nowrap;
+      }
+
+      .gallery-grid::-webkit-scrollbar {
+        height: 8px;
+      }
+
+      .gallery-grid::-webkit-scrollbar-thumb {
+        background: rgba(100, 116, 139, 0.35);
+        border-radius: 999px;
+      }
+
+      .gallery-grid {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+      }
+
+      .gallery-item {
+        position: relative;
+        border-radius: 18px;
+        overflow: hidden;
+        background: var(--bg);
+        aspect-ratio: 4 / 5;
+        min-height: 180px;
+        min-width: 230px;
+        flex: 0 0 230px;
+        display: grid;
+        place-items: center;
+        scroll-snap-align: start;
+        transition:
+          transform 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+
+      .gallery-item.active {
+        transform: scale(1.02);
+        box-shadow: 0 24px 38px rgba(15, 23, 42, 0.12);
+        z-index: 1;
+      }
+
+      .gallery-item img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        cursor: pointer;
+      }
+
+      .gallery-indicators {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+      }
+
+      .gallery-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border);
+        border: 1px solid transparent;
+        transition:
+          transform 0.2s ease,
+          background 0.2s ease,
+          border-color 0.2s ease;
+        cursor: pointer;
+      }
+
+      .gallery-indicator.active {
+        background: var(--primary);
+        border-color: rgba(37, 99, 235, 0.35);
+        transform: scale(1.2);
+      }
+
+      .gallery-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-align: center;
+        color: var(--text-secondary);
+        padding: 18px;
+      }
+
+      .gallery-placeholder .placeholder-icon {
+        font-size: 28px;
+      }
+
+      .gallery-delete {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        border-radius: 50%;
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 23, 42, 0.55);
+        z-index: 1000;
+        padding: 20px;
+      }
+
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-content {
+        width: 100%;
+        max-width: 720px;
+        max-height: 100%;
+        overflow-y: auto;
+        border-radius: 24px;
+        background: var(--card);
+        padding: 26px;
+        box-shadow: var(--shadow);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+
+      .modal-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .close-btn {
+        font-size: 24px;
+        background: transparent;
+        color: var(--text);
+        border: none;
+      }
+
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      /* Itinerary day collapse styles */
+      .itinerary-day {
+        margin-bottom: 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: var(--card);
+      }
+
+      .itinerary-day .day-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .itinerary-day .day-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .itinerary-day.collapsed .day-places {
+        display: none;
+      }
+
+      .collapse-btn {
+        border: none;
+        background: transparent;
+        font-size: 18px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+
+      .form-input,
+      .form-textarea,
+      .form-select {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        padding: 12px 14px;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .form-textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+
+      .itinerary-day {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 22px;
+        padding: 20px;
+        margin-bottom: 18px;
+        box-shadow: var(--shadow);
+      }
+
+      .day-title {
+        margin: 0 0 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .day-title h3 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .day-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .day-places {
+        display: grid;
+        gap: 12px;
+      }
+
+      .itinerary-item {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px;
+        background: var(--bg);
+      }
+
+      .itinerary-item-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .item-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .image-viewer {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.95);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1100;
+        padding: 20px;
+      }
+
+      .image-viewer.show {
+        display: flex;
+      }
+
+      .image-viewer img {
+        max-width: 95vw;
+        max-height: 95vh;
+        border-radius: 18px;
+        object-fit: contain;
+      }
+
+      .viewer-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 48px;
+        height: 48px;
+        border: none;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.16);
+        color: white;
+        font-size: 28px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+      }
+
+      .viewer-nav.prev {
+        left: 8px;
+      }
+
+      .viewer-nav.next {
+        right: 8px;
+      }
+
+      .viewer-nav:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      @media (max-width: 768px) {
+        .viewer-nav {
+          width: 40px;
+          height: 40px;
+          font-size: 24px;
+        }
+
+        .viewer-nav.prev {
+          left: 4px;
+        }
+
+        .viewer-nav.next {
+          right: 4px;
+        }
+      }
+
+      /* Tablet: 950px - 1200px */
+      @media (max-width: 1024px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(120px, 1fr));
+        }
+
+        .content {
+          padding: 24px;
+        }
+      }
+
+      /* Tablet: 760px - 950px */
+      @media (max-width: 950px) {
+        .stats {
+          grid-template-columns: repeat(2, minmax(100px, 1fr));
+        }
+
+        .sidebar {
+          width: 280px;
+        }
+
+        .content {
+          padding: 20px;
+        }
+
+        .modal-content {
+          max-width: 90%;
+          padding: 20px;
+        }
+      }
+
+      /* Mobile: < 760px */
+      @media (max-width: 768px) {
+        .app {
+          flex-direction: column;
+        }
+
+        .sidebar {
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          max-height: 50vh;
+          overflow-y: auto;
+        }
+
+        .sidebar-header {
+          padding: 16px;
+        }
+
+        .sidebar-actions {
+          padding: 12px 16px;
+        }
+
+        .main {
+          flex: 1;
+        }
+
+        .topbar {
+          padding: 0 16px;
+          min-height: 56px;
+          flex-wrap: wrap;
+        }
+
+        .page-title {
+          font-size: 20px;
+        }
+
+        .content {
+          padding: 16px;
+        }
+
+        .hero {
+          padding: 20px;
+          gap: 8px;
+        }
+
+        .hero h1 {
+          font-size: 28px;
+        }
+
+        .hero p {
+          font-size: 14px;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+          margin-top: 16px;
+        }
+
+        .stat-card {
+          padding: 16px;
+          border-radius: 14px;
+        }
+
+        .stat-number {
+          font-size: 24px;
+        }
+
+        .stat-label {
+          font-size: 12px;
+        }
+
+        .trip-toolbar {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .search-box {
+          min-width: unset;
+          width: 100%;
+        }
+
+        .section-title {
+          margin: 24px 0 14px;
+          font-size: 20px;
+        }
+
+        .category-grid {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+
+        .category-card {
+          padding: 16px;
+          gap: 12px;
+        }
+
+        .category-card h3 {
+          font-size: 16px;
+        }
+
+        .place-summary-item {
+          padding: 10px 12px;
+          font-size: 13px;
+        }
+
+        .modal {
+          padding: 12px;
+        }
+
+        .modal-content {
+          width: 100%;
+          max-width: 100%;
+          max-height: 90vh;
+          padding: 16px;
+          border-radius: 16px;
+        }
+
+        .modal-header {
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .modal-title {
+          font-size: 18px;
+        }
+
+        .form-group {
+          margin-bottom: 12px;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+          padding: 10px 12px;
+          font-size: 16px;
+          border-radius: 10px;
+        }
+
+        .form-textarea {
+          min-height: 100px;
+        }
+
+        .btn {
+          padding: 10px 16px;
+          font-size: 14px;
+          border-radius: 10px;
+        }
+
+        .btn-icon {
+          width: 40px;
+          height: 40px;
+          font-size: 18px;
+        }
+
+        .modal-footer {
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .place-detail-wrapper {
+          gap: 0;
+        }
+
+        .place-detail {
+          gap: 0;
+        }
+
+        .place-cover img {
+          height: 240px;
+        }
+
+        .place-detail-title strong {
+          font-size: 20px;
+        }
+
+        .place-detail-meta {
+          gap: 8px;
+        }
+
+        .place-detail-meta span {
+          font-size: 12px;
+          padding: 5px 10px;
+        }
+
+        .place-detail-actions {
+          flex-direction: column;
+        }
+
+        .place-detail-actions .btn {
+          width: 100%;
+        }
+
+        .gallery-toolbar {
+          justify-content: center;
+        }
+
+        .gallery-upload-info {
+          text-align: center;
+          min-width: unset;
+          width: 100%;
+        }
+
+        .gallery-upload-label,
+        #btnUploadGallery {
+          width: 100%;
+          min-width: unset;
+        }
+
+        .place-detail-description {
+          margin-top: 12px;
+          padding-top: 12px;
+          text-align: center;
+          font-size: 14px;
+        }
+
+        .place-detail-nav-button {
+          width: 42px;
+          height: 42px;
+          font-size: 24px;
+        }
+
+        .gallery-item {
+          min-height: 150px;
+          min-width: 180px;
+          flex: 0 0 180px;
+          aspect-ratio: 4/5;
+        }
+
+        .gallery-indicators {
+          gap: 8px;
+          margin-top: 12px;
+        }
+
+        .gallery-indicator {
+          width: 8px;
+          height: 8px;
+        }
+
+        .itinerary-day {
+          padding: 14px;
+          margin-bottom: 12px;
+          border-radius: 14px;
+        }
+
+        .day-title h3 {
+          font-size: 18px;
+        }
+
+        .collapse-btn {
+          font-size: 16px;
+          padding: 4px 6px;
+        }
+
+        .itinerary-item {
+          padding: 12px;
+          border-radius: 12px;
+        }
+
+        .detail-nav {
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+
+        .detail-counter {
+          font-size: 12px;
+        }
+
+        .gallery-toolbar {
+          gap: 8px;
+          flex-direction: column;
+        }
+
+        .gallery-upload-label {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .gallery-upload-info {
+          min-width: unset;
+          font-size: 12px;
+        }
+
+        .place-detail-actions {
+          flex-direction: column;
+        }
+
+        .place-detail-actions .btn {
+          width: 100%;
+        }
+      }
+
+      /* Small Mobile: < 480px */
+      @media (max-width: 480px) {
+        .sidebar {
+          max-height: 40vh;
+        }
+
+        .topbar {
+          padding: 0 12px;
+        }
+
+        .page-title {
+          font-size: 18px;
+        }
+
+        .content {
+          padding: 12px;
+        }
+
+        .hero {
+          padding: 16px;
+        }
+
+        .hero h1 {
+          font-size: 24px;
+        }
+
+        .stats {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .category-card {
+          padding: 12px;
+        }
+
+        .category-card h3 {
+          font-size: 14px;
+        }
+
+        .modal-content {
+          padding: 12px;
+        }
+
+        .modal-title {
+          font-size: 16px;
+        }
+
+        .btn {
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+
+        .place-cover img {
+          height: 200px;
+        }
+
+        .place-detail-title strong {
+          font-size: 18px;
+        }
+
+        .place-detail-meta span {
+          font-size: 11px;
+        }
+
+        .gallery-item {
+          min-height: 120px;
+          min-width: 140px;
+          flex: 0 0 140px;
+        }
+
+        .itinerary-day {
+          padding: 12px;
+        }
+
+        .day-title h3 {
+          font-size: 16px;
+        }
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo">Travel<span>Planner</span></div>
+          <p
+            style="
+              margin-top: 12px;
+              color: var(--text-secondary);
+              font-size: 14px;
+            "
+          >
+            Lưu kế hoạch du lịch của bạn ngay trong trình duyệt.
+          </p>
+        </div>
+        <div class="sidebar-actions">
+          <button
+            type="button"
+            id="btnAddTrip"
+            class="btn btn-primary"
+            style="width: 100%"
+          >
+            + Thêm địa điểm du lịch
+          </button>
+        </div>
+        <div id="tripList" class="trip-list"></div>
+      </aside>
+      <main class="main">
+        <div class="topbar">
+          <div>
+            <div class="page-title">Travel Planner</div>
+            <div style="color: var(--text-secondary); font-size: 14px">
+              Quản lý danh mục, địa điểm, lịch trình và hình ảnh.
+            </div>
+          </div>
+          <div class="top-actions">
+            <button type="button" id="btnRefreshData" class="btn btn-secondary">
+              ⟳ Làm mới
+            </button>
+            <span id="syncStatus" class="sync-status"
+              >Đang kiểm tra kết nối...</span
+            >
+            <button type="button" id="btnDarkMode" class="btn-icon">🌙</button>
+          </div>
+        </div>
+        <div class="content">
+          <div id="emptyState" class="empty-state">
+            <h2>Chưa có địa điểm du lịch</h2>
+            <p>
+              Bắt đầu bằng cách thêm một địa điểm du lịch mới. Sau đó tạo danh
+              mục, thêm địa điểm, upload ảnh và xây dựng lịch trình.
+            </p>
+          </div>
+          <div id="tripDashboard" class="trip-dashboard" style="display: none">
+            <div class="hero">
+              <h1 id="tripNameHero">Tên địa điểm</h1>
+              <p id="tripDescriptionHero">Mô tả chuyến đi</p>
+            </div>
+            <div class="stats">
+              <div class="stat-card">
+                <div class="stat-number" id="statCategories">0</div>
+                <div class="stat-label">Danh mục</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="statPlaces">0</div>
+                <div class="stat-label">Địa điểm</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="statDays">0</div>
+                <div class="stat-label">Ngày lịch trình</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="statImages">0</div>
+                <div class="stat-label">Hình ảnh</div>
+              </div>
+            </div>
+            <div class="trip-toolbar">
+              <div class="search-box">
+                <input
+                  id="categorySearch"
+                  type="text"
+                  placeholder="Tìm kiếm danh mục..."
+                />
+              </div>
+              <button type="button" id="btnAddCategory" class="btn btn-primary">
+                + Thêm danh mục
+              </button>
+              <button
+                type="button"
+                id="btnOpenItinerary"
+                class="btn btn-secondary"
+              >
+                📅 Lịch trình
+              </button>
+            </div>
+            <h2 class="section-title">Danh mục</h2>
+            <div id="categoryGrid" class="category-grid"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="tripModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Thêm địa điểm du lịch</h2>
+          <button type="button" class="close-btn" id="closeTripModal">✕</button>
+        </div>
+        <div class="form-group">
+          <label for="tripNameInput">Tên địa điểm</label>
+          <input
+            id="tripNameInput"
+            class="form-input"
+            placeholder="Ví dụ: Đà Lạt"
+          />
+        </div>
+        <div class="form-group">
+          <label for="tripDescriptionInput">Mô tả</label>
+          <textarea
+            id="tripDescriptionInput"
+            class="form-textarea"
+            placeholder="Mô tả ngắn gọn về chuyến đi"
+          ></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelTripBtn" class="btn btn-secondary">
+            Hủy
+          </button>
+          <button type="button" id="saveTripBtn" class="btn btn-primary">
+            Lưu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="categoryModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Danh mục</h2>
+          <button type="button" class="close-btn" id="closeCategoryModal">
+            ✕
+          </button>
+        </div>
+        <div class="form-group">
+          <label for="categoryNameInput">Tên danh mục</label>
+          <input
+            id="categoryNameInput"
+            class="form-input"
+            placeholder="Ăn Uống"
+          />
+        </div>
+        <div class="form-group">
+          <label for="categoryIconInput">Icon</label>
+          <input id="categoryIconInput" class="form-input" placeholder="🍜" />
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            id="cancelCategoryBtn"
+            class="btn btn-secondary"
+          >
+            Hủy
+          </button>
+          <button type="button" id="saveCategoryBtn" class="btn btn-primary">
+            Lưu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="placeModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Thêm địa điểm</h2>
+          <button type="button" class="close-btn" id="closePlaceModal">
+            ✕
+          </button>
+        </div>
+        <div class="form-group">
+          <label for="placeNameInput">Tên địa điểm</label>
+          <input
+            id="placeNameInput"
+            class="form-input"
+            placeholder="Tên quán, địa điểm"
+          />
+        </div>
+        <div class="form-group">
+          <label for="placeDescriptionInput">Mô tả</label>
+          <textarea
+            id="placeDescriptionInput"
+            class="form-textarea"
+            placeholder="Mô tả chi tiết"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="placeMapInput">Link Google Maps</label>
+          <input id="placeMapInput" class="form-input" placeholder="https://" />
+        </div>
+        <div class="form-group">
+          <label for="placeTiktokInput">Link TikTok</label>
+          <input
+            id="placeTiktokInput"
+            class="form-input"
+            placeholder="https://"
+          />
+        </div>
+        <div class="form-group">
+          <label for="placePriceInput">Giá tiền</label>
+          <input
+            id="placePriceInput"
+            class="form-input"
+            placeholder="Ví dụ: 120k"
+          />
+        </div>
+        <div class="form-group">
+          <label for="placeRatingInput">Rating</label>
+          <input
+            id="placeRatingInput"
+            class="form-input"
+            type="number"
+            min="0"
+            max="5"
+            placeholder="4.5"
+          />
+        </div>
+        <div class="form-group">
+          <label for="placeTagsInput">Tags</label>
+          <input
+            id="placeTagsInput"
+            class="form-input"
+            placeholder="view đẹp, ăn ngon"
+          />
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="cancelPlaceBtn" class="btn btn-secondary">
+            Hủy
+          </button>
+          <button type="button" id="savePlaceBtn" class="btn btn-primary">
+            Lưu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="placeDetailModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title" id="detailPlaceName">Chi tiết địa điểm</h2>
+          <button type="button" class="close-btn" id="closePlaceDetailBtn">
+            ✕
+          </button>
+        </div>
+        <div id="placeDetailContent"></div>
+      </div>
+    </div>
+
+    <div id="itineraryModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Lịch trình</h2>
+          <button type="button" class="close-btn" id="closeItineraryModal">
+            ✕
+          </button>
+        </div>
+        <div
+          class="modal-footer"
+          style="justify-content: flex-start; flex-wrap: wrap"
+        >
+          <button type="button" id="btnAddDay" class="btn btn-primary">
+            + Thêm ngày
+          </button>
+          <button type="button" id="btnExportData" class="btn btn-secondary">
+            Xuất JSON
+          </button>
+        </div>
+        <div id="itineraryDays"></div>
+      </div>
+    </div>
+
+    <div id="itineraryItemModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Thêm vào ngày</h2>
+          <button type="button" class="close-btn" id="closeItineraryItemModal">
+            ✕
+          </button>
+        </div>
+        <div class="form-group">
+          <label for="itemCategorySelect">Danh mục</label>
+          <select id="itemCategorySelect" class="form-select"></select>
+        </div>
+        <div class="form-group">
+          <label for="itemPlaceSelect">Địa điểm</label>
+          <select id="itemPlaceSelect" class="form-select"></select>
+        </div>
+        <div class="form-group">
+          <label for="itemNoteInput">Ghi chú</label>
+          <textarea
+            id="itemNoteInput"
+            class="form-textarea"
+            placeholder="Ghi chú cho ngày đi..."
+          ></textarea>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            id="cancelItineraryItemBtn"
+            class="btn btn-secondary"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            id="saveItineraryItemBtn"
+            class="btn btn-primary"
+          >
+            Lưu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="imageViewer" class="image-viewer">
+      <button type="button" class="viewer-nav prev" id="viewerPrev">‹</button>
+      <img id="viewerImage" alt="Ảnh xem lớn" />
+      <button type="button" class="viewer-nav next" id="viewerNext">›</button>
+    </div>
+
+    <script>
+      const STORAGE_KEY = "travel_planner_data_v1";
+      const SELECTED_TRIP_KEY = "travel_planner_selected_trip";
+      const DARK_MODE_KEY = "travel_planner_dark_mode";
+
+      // Thay thế bằng URL và ANON KEY của Supabase của bạn.
+      const SUPABASE_URL = "https://iidvnpnpdnlmckaeqvvm.supabase.co";
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpZHZucG5wZG5sbWNrYWVxdnZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MDAyMDcsImV4cCI6MjA5NjQ3NjIwN30.Du4eoGPBJxt1gmnX_MvZz7YJn3_MPf-auGW2o7zq2go";
+      const SUPABASE_TABLE = "travel_planner_state";
+      const STATE_ROW_ID = 1;
+
+      const supabase = window.supabase
+        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        : null;
+
+      const tripList = document.getElementById("tripList");
+      const btnAddTrip = document.getElementById("btnAddTrip");
+      const tripModal = document.getElementById("tripModal");
+      const closeTripModal = document.getElementById("closeTripModal");
+      const cancelTripBtn = document.getElementById("cancelTripBtn");
+      const saveTripBtn = document.getElementById("saveTripBtn");
+      const tripNameInput = document.getElementById("tripNameInput");
+      const tripDescriptionInput = document.getElementById(
+        "tripDescriptionInput",
+      );
+
+      const emptyState = document.getElementById("emptyState");
+      const tripDashboard = document.getElementById("tripDashboard");
+      const tripNameHero = document.getElementById("tripNameHero");
+      const tripDescriptionHero = document.getElementById(
+        "tripDescriptionHero",
+      );
+
+      const statCategories = document.getElementById("statCategories");
+      const statPlaces = document.getElementById("statPlaces");
+      const statDays = document.getElementById("statDays");
+      const statImages = document.getElementById("statImages");
+
+      const categorySearch = document.getElementById("categorySearch");
+      const btnAddCategory = document.getElementById("btnAddCategory");
+      const btnOpenItinerary = document.getElementById("btnOpenItinerary");
+      const btnRefreshData = document.getElementById("btnRefreshData");
+      const syncStatus = document.getElementById("syncStatus");
+      const btnDarkMode = document.getElementById("btnDarkMode");
+      const categoryGrid = document.getElementById("categoryGrid");
+
+      const categoryModal = document.getElementById("categoryModal");
+      const closeCategoryModal = document.getElementById("closeCategoryModal");
+      const cancelCategoryBtn = document.getElementById("cancelCategoryBtn");
+      const saveCategoryBtn = document.getElementById("saveCategoryBtn");
+      const categoryNameInput = document.getElementById("categoryNameInput");
+      const categoryIconInput = document.getElementById("categoryIconInput");
+
+      const placeModal = document.getElementById("placeModal");
+      const closePlaceModal = document.getElementById("closePlaceModal");
+      const cancelPlaceBtn = document.getElementById("cancelPlaceBtn");
+      const savePlaceBtn = document.getElementById("savePlaceBtn");
+      const placeNameInput = document.getElementById("placeNameInput");
+      const placeDescriptionInput = document.getElementById(
+        "placeDescriptionInput",
+      );
+      const placeMapInput = document.getElementById("placeMapInput");
+      const placeTiktokInput = document.getElementById("placeTiktokInput");
+      const placePriceInput = document.getElementById("placePriceInput");
+      const placeRatingInput = document.getElementById("placeRatingInput");
+      const placeTagsInput = document.getElementById("placeTagsInput");
+
+      const placeDetailModal = document.getElementById("placeDetailModal");
+      const closePlaceDetailBtn = document.getElementById(
+        "closePlaceDetailBtn",
+      );
+      const detailPlaceName = document.getElementById("detailPlaceName");
+      const placeDetailContent = document.getElementById("placeDetailContent");
+
+      const itineraryModal = document.getElementById("itineraryModal");
+      const closeItineraryModal = document.getElementById(
+        "closeItineraryModal",
+      );
+      const btnAddDay = document.getElementById("btnAddDay");
+      const itineraryDays = document.getElementById("itineraryDays");
+      const btnExportData = document.getElementById("btnExportData");
+
+      const itineraryItemModal = document.getElementById("itineraryItemModal");
+      const closeItineraryItemModal = document.getElementById(
+        "closeItineraryItemModal",
+      );
+      const cancelItineraryItemBtn = document.getElementById(
+        "cancelItineraryItemBtn",
+      );
+      const saveItineraryItemBtn = document.getElementById(
+        "saveItineraryItemBtn",
+      );
+      const itemCategorySelect = document.getElementById("itemCategorySelect");
+      const itemPlaceSelect = document.getElementById("itemPlaceSelect");
+      const itemNoteInput = document.getElementById("itemNoteInput");
+
+      const imageViewer = document.getElementById("imageViewer");
+      const viewerImage = document.getElementById("viewerImage");
+      const viewerPrev = document.getElementById("viewerPrev");
+      const viewerNext = document.getElementById("viewerNext");
+
+      let state = { trips: [] };
+      let selectedTripId = null;
+      let editingTripId = null;
+      let editingCategoryId = null;
+      let editingPlaceId = null;
+      let selectedCategoryId = null;
+      let selectedPlaceId = null;
+      let currentDayId = null;
+      let editingItineraryItemId = null;
+      let galleryImages = [];
+      let currentGalleryIndex = 0;
+      let collapsedDays = new Set();
+      let placeDetailShowNav = true;
+      let placeDetailTouchStartX = null;
+      let supabaseConnected = false;
+      let supabaseChannel = null;
+      let lastLocalStateSignature = "";
+
+      function uuid() {
+        return (
+          "id-" +
+          Date.now().toString(36) +
+          Math.random().toString(36).slice(2, 8)
+        );
+      }
+
+      function updateSyncStatus(message, isError = false) {
+        if (!syncStatus) return;
+        syncStatus.textContent = message;
+        syncStatus.style.color = isError
+          ? "var(--danger)"
+          : "var(--text-secondary)";
+      }
+
+      async function initSupabase() {
+        if (
+          !supabase ||
+          SUPABASE_URL.includes("YOUR_") ||
+          SUPABASE_ANON_KEY.includes("YOUR_")
+        ) {
+          updateSyncStatus("Supabase chưa cấu hình");
+          return;
+        }
+
+        updateSyncStatus("Đang kết nối Supabase...");
+
+        try {
+          const { data, error } = await supabase
+            .from(SUPABASE_TABLE)
+            .select("id")
+            .eq("id", STATE_ROW_ID)
+            .maybeSingle();
+
+          if (error) throw error;
+          supabaseConnected = true;
+          updateSyncStatus("Đã kết nối Supabase");
+          await ensureStateRow(data?.id);
+          subscribeToStateUpdates();
+        } catch (err) {
+          console.warn("Supabase init failed:", err.message || err);
+          supabaseConnected = false;
+          updateSyncStatus("Không kết nối Supabase", true);
+        }
+      }
+
+      async function ensureStateRow(existingId) {
+        if (!supabaseConnected) return;
+        if (existingId) return;
+
+        try {
+          const { error } = await supabase.from(SUPABASE_TABLE).insert({
+            id: STATE_ROW_ID,
+            data: state,
+          });
+          if (error) throw error;
+        } catch (err) {
+          console.warn("Supabase ensure row failed:", err.message || err);
+        }
+      }
+
+      function subscribeToStateUpdates() {
+        if (!supabaseConnected || !supabase?.channel) return;
+        if (supabaseChannel) return;
+
+        const channel = supabase.channel("travel_planner_state_channel");
+
+        channel.on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: SUPABASE_TABLE,
+            filter: `id=eq.${STATE_ROW_ID}`,
+          },
+          (payload) => {
+            const incoming = payload.record?.data;
+            if (!incoming) return;
+            const incomingSignature = JSON.stringify(incoming);
+            if (incomingSignature === lastLocalStateSignature) return;
+            state = incoming;
+            selectedTripId =
+              selectedTripId && getTrip(selectedTripId)
+                ? selectedTripId
+                : state.trips[0]?.id || null;
+            renderTrips();
+            renderDashboard();
+            updateSyncStatus("Đã cập nhật dữ liệu mới từ bạn bè");
+          },
+        );
+
+        channel.subscribe();
+        supabaseChannel = channel;
+      }
+
+      async function loadState() {
+        const fallbackLoad = () => {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          state = raw ? JSON.parse(raw) : { trips: [] };
+        };
+
+        if (supabaseConnected) {
+          try {
+            const { data, error } = await supabase
+              .from(SUPABASE_TABLE)
+              .select("data")
+              .eq("id", STATE_ROW_ID)
+              .maybeSingle();
+            if (error) throw error;
+            state = data?.data || { trips: [] };
+          } catch (err) {
+            console.warn("Supabase load failed:", err.message || err);
+            updateSyncStatus("Tải dữ liệu Supabase thất bại", true);
+            fallbackLoad();
+          }
+        } else {
+          fallbackLoad();
+        }
+
+        selectedTripId = localStorage.getItem(SELECTED_TRIP_KEY);
+        if (selectedTripId && !getTrip(selectedTripId)) {
+          selectedTripId = null;
+        }
+        const dark = localStorage.getItem(DARK_MODE_KEY);
+        if (dark === "true") {
+          document.body.classList.add("dark");
+          btnDarkMode.textContent = "☀️";
+        }
+      }
+
+      async function refreshSharedState() {
+        if (!supabaseConnected) {
+          updateSyncStatus("Chưa kết nối Supabase", true);
+          return;
+        }
+        updateSyncStatus("Đang làm mới dữ liệu...");
+        await loadState();
+        renderTrips();
+        renderDashboard();
+        updateSyncStatus("Đã làm mới dữ liệu");
+      }
+
+      async function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        lastLocalStateSignature = JSON.stringify(state);
+
+        if (supabaseConnected) {
+          updateSyncStatus("Đang đồng bộ dữ liệu...");
+          try {
+            const { error } = await supabase.from(SUPABASE_TABLE).upsert({
+              id: STATE_ROW_ID,
+              data: state,
+            });
+            if (error) throw error;
+            updateSyncStatus("Đã đồng bộ dữ liệu");
+          } catch (err) {
+            console.warn("Supabase save failed:", err.message || err);
+            updateSyncStatus("Lưu Supabase thất bại", true);
+          }
+        }
+      }
+
+      function saveSelectedTrip() {
+        localStorage.setItem(SELECTED_TRIP_KEY, selectedTripId || "");
+      }
+
+      function getTrip(tripId) {
+        return state.trips.find((trip) => trip.id === tripId);
+      }
+
+      function getCategory(trip, categoryId) {
+        return trip?.categories.find((category) => category.id === categoryId);
+      }
+
+      function getPlace(category, placeId) {
+        return category?.places.find((place) => place.id === placeId);
+      }
+
+      function renderTrips() {
+        if (!state.trips.length) {
+          tripList.innerHTML =
+            "<div style='padding:24px;color:var(--text-secondary);'>Chưa có địa điểm du lịch. Nhấn Thêm để bắt đầu.</div>";
+          return;
+        }
+
+        tripList.innerHTML = state.trips
+          .map((trip) => {
+            const activeClass = trip.id === selectedTripId ? "active" : "";
+            return `
+            <div class="trip-card ${activeClass}" data-id="${trip.id}">
+              <h3>${trip.name}</h3>
+              <p>${trip.description || "Chưa có mô tả"}</p>
+              <div class="trip-card-actions">
+                <button type="button" class="btn btn-secondary" data-action="edit" data-id="${trip.id}">Sửa</button>
+                <button type="button" class="btn btn-danger" data-action="delete" data-id="${trip.id}">Xóa</button>
+              </div>
+            </div>`;
+          })
+          .join("");
+
+        tripList.querySelectorAll(".trip-card").forEach((card) => {
+          card.addEventListener("click", () => {
+            selectTrip(card.dataset.id);
+          });
+        });
+
+        tripList
+          .querySelectorAll("button[data-action='edit']")
+          .forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              openTripModal(btn.dataset.id);
+            });
+          });
+
+        tripList
+          .querySelectorAll("button[data-action='delete']")
+          .forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              e.stopPropagation();
+              const id = btn.dataset.id;
+              if (confirm("Xóa địa điểm du lịch này?")) {
+                state.trips = state.trips.filter((trip) => trip.id !== id);
+                if (selectedTripId === id) {
+                  selectedTripId = state.trips.length
+                    ? state.trips[0].id
+                    : null;
+                  saveSelectedTrip();
+                }
+                saveState();
+                renderTrips();
+                renderDashboard();
+              }
+            });
+          });
+      }
+
+      function renderDashboard() {
+        const trip = getTrip(selectedTripId);
+        if (!trip) {
+          emptyState.style.display = "flex";
+          tripDashboard.style.display = "none";
+          return;
+        }
+
+        emptyState.style.display = "none";
+        tripDashboard.style.display = "block";
+        tripNameHero.textContent = trip.name;
+        tripDescriptionHero.textContent = trip.description || "Chưa có mô tả";
+        btnAddCategory.disabled = false;
+        btnOpenItinerary.disabled = false;
+        renderStats(trip);
+        renderCategories(trip);
+      }
+
+      function renderStats(trip) {
+        const categories = trip.categories || [];
+        const places = categories.flatMap((category) => category.places || []);
+        const days = trip.itineraryDays || [];
+        const images = places.flatMap((place) => place.images || []).length;
+        statCategories.textContent = categories.length;
+        statPlaces.textContent = places.length;
+        statDays.textContent = days.length;
+        statImages.textContent = images;
+      }
+
+      function renderCategories(trip) {
+        const query = categorySearch.value.trim().toLowerCase();
+        const categories = (trip.categories || []).filter((cat) =>
+          cat.name.toLowerCase().includes(query),
+        );
+
+        if (!categories.length) {
+          categoryGrid.innerHTML =
+            "<div style='padding:24px;color:var(--text-secondary);'>Chưa có danh mục phù hợp.</div>";
+          return;
+        }
+
+        categoryGrid.innerHTML = categories
+          .map((category) => {
+            const places = category.places || [];
+            const placePreview = places
+              .slice(0, 3)
+              .map(
+                (place) => `
+              <div class='place-summary-item'>
+                <div class='place-item-title'>
+                  <div class='place-item-main'>
+                    <strong>${place.name}</strong>
+                    <div class='place-item-meta'>${place.images.length} ảnh · ⭐ ${place.rating || "-"} · ${place.price || "-"}</div>
+                  </div>
+                  <div class='place-item-actions'>
+                    <button type='button' class='btn btn-secondary' data-action='view-place' data-category='${category.id}' data-place='${place.id}'>Xem</button>
+                    <button type='button' class='btn btn-primary' data-action='edit-place' data-category='${category.id}' data-place='${place.id}'>Sửa</button>
+                    <button type='button' class='btn btn-danger' data-action='delete-place' data-category='${category.id}' data-place='${place.id}'>Xóa</button>
+                  </div>
+                </div>
+              </div>`,
+              )
+              .join("");
+            return `
+            <div class="category-card">
+              <div>
+                <h3><span>${category.icon || "📌"}</span>${category.name}</h3>
+                <p>${places.length} địa điểm</p>
+              </div>
+              ${placePreview ? `<div class="place-summary">${placePreview}</div>` : "<p style='color:var(--text-secondary);'>Chưa thêm địa điểm nào.</p>"}
+              <div class="category-actions">
+                <button type="button" class="btn btn-primary" data-action="add-place" data-id="${category.id}">+ Thêm địa điểm</button>
+                <button type="button" class="btn btn-secondary" data-action="edit-category" data-id="${category.id}">Sửa</button>
+                <button type="button" class="btn btn-danger" data-action="delete-category" data-id="${category.id}">Xóa</button>
+              </div>
+            </div>`;
+          })
+          .join("");
+
+        categoryGrid
+          .querySelectorAll("button[data-action='add-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => openPlaceModal(btn.dataset.id));
+          });
+        categoryGrid
+          .querySelectorAll("button[data-action='edit-category']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openCategoryModal(btn.dataset.id),
+            );
+          });
+        categoryGrid
+          .querySelectorAll("button[data-action='delete-category']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => deleteCategory(btn.dataset.id));
+          });
+        categoryGrid
+          .querySelectorAll("button[data-action='view-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openPlaceDetail(btn.dataset.category, btn.dataset.place),
+            );
+          });
+        categoryGrid
+          .querySelectorAll("button[data-action='edit-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openPlaceModal(btn.dataset.category, btn.dataset.place),
+            );
+          });
+        categoryGrid
+          .querySelectorAll("button[data-action='delete-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              deletePlace(btn.dataset.category, btn.dataset.place),
+            );
+          });
+      }
+
+      function selectTrip(tripId) {
+        if (selectedTripId === tripId) return;
+        selectedTripId = tripId;
+        saveSelectedTrip();
+        renderTrips();
+        renderDashboard();
+      }
+
+      function openModal(modal) {
+        // ensure newly opened modal appears on top of existing ones
+        if (typeof window.__modalZIndex === "undefined")
+          window.__modalZIndex = 1000;
+        window.__modalZIndex += 1;
+        modal.style.zIndex = window.__modalZIndex;
+        modal.classList.add("show");
+      }
+
+      function closeModal(modal) {
+        modal.classList.remove("show");
+        // clear inline z-index so stacking can reset
+        if (modal.style) modal.style.zIndex = null;
+      }
+
+      function openTripModal(tripId = null) {
+        editingTripId = tripId;
+        if (tripId) {
+          const trip = getTrip(tripId);
+          tripNameInput.value = trip.name;
+          tripDescriptionInput.value = trip.description || "";
+          tripModal.querySelector(".modal-title").textContent =
+            "Sửa địa điểm du lịch";
+        } else {
+          tripNameInput.value = "";
+          tripDescriptionInput.value = "";
+          tripModal.querySelector(".modal-title").textContent =
+            "Thêm địa điểm du lịch";
+        }
+        openModal(tripModal);
+      }
+
+      function createTrip() {
+        const name = tripNameInput.value.trim();
+        if (!name) {
+          alert("Hãy nhập tên địa điểm du lịch.");
+          return;
+        }
+        const trip = {
+          id: uuid(),
+          name,
+          description: tripDescriptionInput.value.trim(),
+          categories: [],
+          itineraryDays: [],
+        };
+        state.trips.push(trip);
+        selectedTripId = trip.id;
+        saveSelectedTrip();
+        saveState();
+        renderTrips();
+        renderDashboard();
+        closeModal(tripModal);
+      }
+
+      function updateTrip() {
+        const trip = getTrip(editingTripId);
+        if (!trip) return;
+        trip.name = tripNameInput.value.trim();
+        trip.description = tripDescriptionInput.value.trim();
+        saveState();
+        renderTrips();
+        renderDashboard();
+        closeModal(tripModal);
+      }
+
+      function openCategoryModal(categoryId = null) {
+        if (!selectedTripId) {
+          alert("Hãy chọn địa điểm du lịch trước.");
+          return;
+        }
+        editingCategoryId = categoryId;
+        const title = categoryId ? "Sửa danh mục" : "Thêm danh mục";
+        categoryModal.querySelector(".modal-title").textContent = title;
+        if (categoryId) {
+          const category = getCategory(getTrip(selectedTripId), categoryId);
+          categoryNameInput.value = category.name;
+          categoryIconInput.value = category.icon || "";
+        } else {
+          categoryNameInput.value = "";
+          categoryIconInput.value = "";
+        }
+        openModal(categoryModal);
+      }
+
+      function createCategory() {
+        const name = categoryNameInput.value.trim();
+        if (!name) {
+          alert("Nhập tên danh mục.");
+          return;
+        }
+        const category = {
+          id: uuid(),
+          name,
+          icon: categoryIconInput.value.trim() || "📌",
+          places: [],
+        };
+        const trip = getTrip(selectedTripId);
+        trip.categories.push(category);
+        saveState();
+        renderDashboard();
+        closeModal(categoryModal);
+      }
+
+      function updateCategory() {
+        const category = getCategory(
+          getTrip(selectedTripId),
+          editingCategoryId,
+        );
+        if (!category) return;
+        category.name = categoryNameInput.value.trim();
+        category.icon = categoryIconInput.value.trim() || "📌";
+        saveState();
+        renderDashboard();
+        closeModal(categoryModal);
+      }
+
+      function deleteCategory(categoryId) {
+        if (!confirm("Xóa danh mục này?")) return;
+        const trip = getTrip(selectedTripId);
+        trip.categories = trip.categories.filter(
+          (category) => category.id !== categoryId,
+        );
+        trip.itineraryDays.forEach((day) => {
+          day.items = day.items.filter(
+            (item) => item.categoryId !== categoryId,
+          );
+        });
+        saveState();
+        renderDashboard();
+      }
+
+      function openPlaceModal(categoryId, placeId = null) {
+        if (!selectedTripId) {
+          alert("Hãy chọn địa điểm du lịch trước.");
+          return;
+        }
+        selectedCategoryId = categoryId;
+        editingPlaceId = placeId;
+        const placeModalTitle = placeModal.querySelector(".modal-title");
+        if (placeId) {
+          const category = getCategory(getTrip(selectedTripId), categoryId);
+          const place = getPlace(category, placeId);
+          placeModalTitle.textContent = "Sửa địa điểm";
+          placeNameInput.value = place.name;
+          placeDescriptionInput.value = place.description || "";
+          placeMapInput.value = place.map || "";
+          placeTiktokInput.value = place.tiktok || "";
+          placePriceInput.value = place.price || "";
+          placeRatingInput.value = place.rating || "";
+          placeTagsInput.value = place.tags || "";
+        } else {
+          placeModalTitle.textContent = "Thêm địa điểm";
+          placeNameInput.value = "";
+          placeDescriptionInput.value = "";
+          placeMapInput.value = "";
+          placeTiktokInput.value = "";
+          placePriceInput.value = "";
+          placeRatingInput.value = "";
+          placeTagsInput.value = "";
+        }
+        openModal(placeModal);
+      }
+
+      function createPlace() {
+        const name = placeNameInput.value.trim();
+        if (!name) {
+          alert("Hãy nhập tên địa điểm.");
+          return;
+        }
+        const category = getCategory(
+          getTrip(selectedTripId),
+          selectedCategoryId,
+        );
+        category.places.push({
+          id: uuid(),
+          name,
+          description: placeDescriptionInput.value.trim(),
+          map: placeMapInput.value.trim(),
+          tiktok: placeTiktokInput.value.trim(),
+          price: placePriceInput.value.trim(),
+          rating: placeRatingInput.value.trim(),
+          tags: placeTagsInput.value.trim(),
+          images: [],
+        });
+        saveState();
+        renderDashboard();
+        closeModal(placeModal);
+      }
+
+      function updatePlace() {
+        const category = getCategory(
+          getTrip(selectedTripId),
+          selectedCategoryId,
+        );
+        const place = getPlace(category, editingPlaceId);
+        if (!place) return;
+        place.name = placeNameInput.value.trim();
+        place.description = placeDescriptionInput.value.trim();
+        place.map = placeMapInput.value.trim();
+        place.tiktok = placeTiktokInput.value.trim();
+        place.price = placePriceInput.value.trim();
+        place.rating = placeRatingInput.value.trim();
+        place.tags = placeTagsInput.value.trim();
+        saveState();
+        renderDashboard();
+        closeModal(placeModal);
+      }
+
+      function deletePlace(categoryId, placeId) {
+        if (!confirm("Xóa địa điểm này?")) return;
+        const trip = getTrip(selectedTripId);
+        const category = getCategory(trip, categoryId);
+        category.places = category.places.filter(
+          (place) => place.id !== placeId,
+        );
+        trip.itineraryDays.forEach((day) => {
+          day.items = day.items.filter((item) => item.placeId !== placeId);
+        });
+        saveState();
+        renderDashboard();
+      }
+
+      function openPlaceDetail(categoryId, placeId, showNav = true) {
+        selectedCategoryId = categoryId;
+        selectedPlaceId = placeId;
+        placeDetailShowNav = !!showNav;
+        const category = getCategory(getTrip(selectedTripId), categoryId);
+        const place = getPlace(category, placeId);
+        if (!place) return;
+        const categoryPlaces = category.places || [];
+        const currentIndex = categoryPlaces.findIndex(
+          (item) => item.id === placeId,
+        );
+        const totalPlaces = categoryPlaces.length;
+        const hasPrev = currentIndex > 0;
+        const hasNext = currentIndex < totalPlaces - 1;
+
+        detailPlaceName.textContent = place.name;
+        placeDetailContent.innerHTML = `
+          <div class="detail-nav">
+            <div></div>
+            <div class="detail-counter">${currentIndex + 1} / ${totalPlaces} trong danh mục</div>
+            <div></div>
+          </div>
+          <div class="place-detail-wrapper">
+            <div class="place-detail-wrapper-inner">
+              <div class="place-detail section-block">
+                <div class="place-detail-header">
+                  <div class="place-detail-title">
+                    <strong>${place.name}</strong>
+                  </div>
+                  <div class="place-detail-meta">
+                    <span>⭐ ${place.rating || "-"}</span>
+                    <span>💰 ${place.price || "-"}</span>
+                    <span>Tags: ${place.tags || "Không"}</span>
+                  </div>
+                  <div class="place-detail-actions">
+                    ${place.map ? `<a class="btn btn-primary" href="${place.map}" target="_blank">📍 Maps</a>` : ""}
+                    ${place.tiktok ? `<a class="btn btn-secondary" href="${place.tiktok}" target="_blank">🎵 TikTok</a>` : ""}
+                    <button type="button" class="btn btn-secondary" id="editPlaceDetailBtn">Sửa</button>
+                  </div>
+                </div>
+                <div class="place-detail-description">${place.description || "Chưa có mô tả"}</div>
+              </div>
+              <div class="gallery-toolbar">
+                <label for="galleryUpload" class="gallery-upload-label">
+                  <span>Chọn ảnh</span>
+                </label>
+                <span id="galleryFileInfo" class="gallery-upload-info">Chưa chọn file nào</span>
+                <input type="file" id="galleryUpload" class="gallery-upload-input" multiple accept="image/*" />
+                <button type="button" id="btnUploadGallery" class="btn btn-primary">Upload ảnh</button>
+              </div>
+              <div id="galleryGrid" class="gallery-grid"></div>
+              <div id="galleryIndicators" class="gallery-indicators"></div>
+            </div>
+            ${
+              showNav
+                ? `
+            <div class="place-detail-nav-row">
+              <button type="button" class="place-detail-nav-button" id="placePrevBtn" ${hasPrev ? "" : "disabled"}>‹</button>
+              <button type="button" class="place-detail-nav-button" id="placeNextBtn" ${hasNext ? "" : "disabled"}>›</button>
+            </div>
+            `
+                : ""
+            }
+          </div>
+          <hr />
+        `;
+        openModal(placeDetailModal);
+        document
+          .getElementById("editPlaceDetailBtn")
+          .addEventListener("click", () => openPlaceModal(categoryId, placeId));
+        document
+          .getElementById("btnUploadGallery")
+          .addEventListener("click", uploadGalleryImages);
+        const uploadInput = document.getElementById("galleryUpload");
+        const uploadInfo = document.getElementById("galleryFileInfo");
+        if (uploadInput && uploadInfo) {
+          uploadInput.addEventListener("change", () => {
+            const files = Array.from(uploadInput.files || []);
+            uploadInfo.textContent =
+              files.length > 0
+                ? `${files.length} ảnh đã chọn`
+                : "Chưa chọn file nào";
+          });
+        }
+        const prevBtn = document.getElementById("placePrevBtn");
+        const nextBtn = document.getElementById("placeNextBtn");
+        if (prevBtn)
+          prevBtn.addEventListener("click", () => navigatePlaceDetail(-1));
+        if (nextBtn)
+          nextBtn.addEventListener("click", () => navigatePlaceDetail(1));
+        renderGallery();
+      }
+
+      function navigatePlaceDetail(direction) {
+        const category = getCategory(
+          getTrip(selectedTripId),
+          selectedCategoryId,
+        );
+        const places = category?.places || [];
+        const currentIndex = places.findIndex(
+          (item) => item.id === selectedPlaceId,
+        );
+        const nextIndex = currentIndex + direction;
+        if (nextIndex < 0 || nextIndex >= places.length) return;
+        openPlaceDetail(
+          selectedCategoryId,
+          places[nextIndex].id,
+          placeDetailShowNav,
+        );
+      }
+
+      function handlePlaceDetailTouchStart(event) {
+        if (!placeDetailModal.classList.contains("show")) return;
+        placeDetailTouchStartX = event.changedTouches[0].clientX;
+      }
+
+      function handlePlaceDetailTouchEnd(event) {
+        if (placeDetailTouchStartX === null) return;
+        const touchEndX = event.changedTouches[0].clientX;
+        const diff = touchEndX - placeDetailTouchStartX;
+        placeDetailTouchStartX = null;
+        if (Math.abs(diff) < 50) return;
+        if (diff > 0) {
+          navigatePlaceDetail(-1);
+        } else {
+          navigatePlaceDetail(1);
+        }
+      }
+
+      function renderGallery() {
+        const category = getCategory(
+          getTrip(selectedTripId),
+          selectedCategoryId,
+        );
+        const place = getPlace(category, selectedPlaceId);
+        const grid = document.getElementById("galleryGrid");
+        const indicators = document.getElementById("galleryIndicators");
+        galleryImages = place.images || [];
+        if (!galleryImages.length) {
+          grid.innerHTML = `
+            <div class="gallery-item">
+              <div class="gallery-placeholder">
+                <div class="placeholder-icon">🖼️</div>
+                <div>Chưa có ảnh nào. Upload ảnh để lưu trữ và xem gallery.</div>
+              </div>
+            </div>
+          `;
+          if (indicators) indicators.innerHTML = "";
+          return;
+        }
+
+        grid.innerHTML = galleryImages
+          .map(
+            (image, index) => `
+            <div class="gallery-item${index === 0 ? " active" : ""}">
+              <img src="${image.data}" alt="Ảnh ${index + 1}" onclick="window.openImageViewer(${index})" />
+              <button type="button" class="btn btn-danger gallery-delete" data-index="${index}">✕</button>
+            </div>
+          `,
+          )
+          .join("");
+
+        if (indicators) {
+          indicators.innerHTML = galleryImages
+            .map(
+              (_, index) => `
+              <button type="button" class="gallery-indicator${index === 0 ? " active" : ""}" data-index="${index}" aria-label="Ảnh ${index + 1}"></button>
+            `,
+            )
+            .join("");
+
+          indicators.querySelectorAll(".gallery-indicator").forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const targetIndex = Number(btn.dataset.index);
+              scrollToGalleryIndex(targetIndex);
+              setActiveGalleryIndex(targetIndex);
+            });
+          });
+        }
+
+        grid.querySelectorAll(".gallery-delete").forEach((btn) => {
+          btn.addEventListener("click", () =>
+            deleteGalleryImage(Number(btn.dataset.index)),
+          );
+        });
+
+        grid.onscroll = () => updateGalleryActiveOnScroll(grid, indicators);
+        grid.scrollLeft = 0;
+        setActiveGalleryIndex(0);
+      }
+
+      function setActiveGalleryIndex(index) {
+        const grid = document.getElementById("galleryGrid");
+        const indicators = document.getElementById("galleryIndicators");
+        const items = grid?.querySelectorAll(".gallery-item") || [];
+        const dots = indicators?.querySelectorAll(".gallery-indicator") || [];
+
+        items.forEach((item, itemIndex) => {
+          item.classList.toggle("active", itemIndex === index);
+        });
+        dots.forEach((dot, dotIndex) => {
+          dot.classList.toggle("active", dotIndex === index);
+        });
+        currentGalleryIndex = index;
+      }
+
+      function scrollToGalleryIndex(index) {
+        const grid = document.getElementById("galleryGrid");
+        const item = grid?.querySelectorAll(".gallery-item")[index];
+        if (!item || !grid) return;
+        grid.scrollTo({ left: item.offsetLeft, behavior: "smooth" });
+      }
+
+      function updateGalleryActiveOnScroll(grid, indicators) {
+        const items = Array.from(grid.querySelectorAll(".gallery-item"));
+        if (!items.length) return;
+
+        const gridCenter =
+          grid.getBoundingClientRect().left + grid.clientWidth / 2;
+        let activeIndex = 0;
+        let minDistance = Infinity;
+
+        items.forEach((item, index) => {
+          const rect = item.getBoundingClientRect();
+          const itemCenter = rect.left + rect.width / 2;
+          const distance = Math.abs(itemCenter - gridCenter);
+          if (distance < minDistance) {
+            minDistance = distance;
+            activeIndex = index;
+          }
+        });
+
+        setActiveGalleryIndex(activeIndex);
+      }
+
+      async function uploadGalleryImages() {
+        const uploadInput = document.getElementById("galleryUpload");
+        const files = Array.from(uploadInput.files || []);
+        if (!files.length) {
+          alert("Chọn ít nhất 1 hình ảnh.");
+          return;
+        }
+        const category = getCategory(
+          getTrip(selectedTripId),
+          selectedCategoryId,
+        );
+        const place = getPlace(category, selectedPlaceId);
+        for (const file of files) {
+          const data = await compressImage(file);
+          place.images.push({ id: uuid(), data });
+        }
+        saveState();
+        uploadInput.value = "";
+        const uploadInfo = document.getElementById("galleryFileInfo");
+        if (uploadInfo) uploadInfo.textContent = "Chưa chọn file nào";
+        renderGallery();
+        renderStats(getTrip(selectedTripId));
+      }
+
+      function deleteGalleryImage(index) {
+        if (!confirm("Xóa ảnh này?")) return;
+        const category = getCategory(
+          getTrip(selectedTripId),
+          selectedCategoryId,
+        );
+        const place = getPlace(category, selectedPlaceId);
+        place.images.splice(index, 1);
+        saveState();
+        renderGallery();
+        renderStats(getTrip(selectedTripId));
+      }
+
+      function openImageViewer(index) {
+        if (!galleryImages.length || index < 0 || index >= galleryImages.length)
+          return;
+        currentGalleryIndex = index;
+        viewerImage.src = galleryImages[index].data;
+        imageViewer.classList.add("show");
+      }
+
+      function moveViewer(direction) {
+        if (!galleryImages.length) return;
+        currentGalleryIndex =
+          (currentGalleryIndex + direction + galleryImages.length) %
+          galleryImages.length;
+        viewerImage.src = galleryImages[currentGalleryIndex].data;
+      }
+
+      function openItineraryModal() {
+        if (!selectedTripId) {
+          alert("Hãy chọn địa điểm du lịch trước.");
+          return;
+        }
+        openModal(itineraryModal);
+        renderItinerary();
+      }
+
+      function renderItinerary() {
+        const trip = getTrip(selectedTripId);
+        if (!trip) return;
+        // restore collapsed state for this trip
+        collapsedDays = new Set(trip.collapsedDays || []);
+        const days = [...(trip.itineraryDays || [])].sort(
+          (a, b) => a.number - b.number,
+        );
+        if (!days.length) {
+          itineraryDays.innerHTML =
+            "<div style='padding:20px;color:var(--text-secondary);'>Chưa có ngày nào. Nhấn Thêm ngày để tạo lịch trình.</div>";
+          return;
+        }
+        itineraryDays.innerHTML = days
+          .map((day) => {
+            const items = day.items || [];
+            const itemsHtml = items
+              .map((item) => {
+                const category = getCategory(trip, item.categoryId) || {
+                  name: "Danh mục đã xóa",
+                };
+                const place = getPlace(category, item.placeId) || {
+                  name: "Địa điểm đã xóa",
+                };
+                return `
+                  <div class="itinerary-item">
+                    <div class="itinerary-item-title">
+                      <div>
+                        <strong>${place.name}</strong>
+                      </div>
+                      <div class="item-actions">
+                        <button type="button" class="btn btn-secondary" data-action="view-place" data-category="${item.categoryId}" data-place="${item.placeId}">Xem</button>
+                        <button type="button" class="btn btn-secondary" data-action="up" data-day="${day.id}" data-item="${item.id}">↑</button>
+                        <button type="button" class="btn btn-secondary" data-action="down" data-day="${day.id}" data-item="${item.id}">↓</button>
+                        <button type="button" class="btn btn-danger" data-action="remove-item" data-day="${day.id}" data-item="${item.id}">Xóa</button>
+                      </div>
+                    </div>
+                    ${item.note ? `<p style="margin:10px 0 0;color:var(--text-secondary);">${item.note}</p>` : ""}
+                  </div>`;
+              })
+              .join("");
+            return `
+              <div class="itinerary-day${collapsedDays.has(day.id) ? " collapsed" : ""}">
+                <div class="day-title">
+                  <div style="display:flex;align-items:center;gap:12px;">
+                    <button type="button" class="collapse-btn" data-action="toggle-day" data-day="${day.id}">${collapsedDays.has(day.id) ? "▸" : "▾"}</button>
+                    <h3 style="margin:0">Ngày ${day.number}</h3>
+                  </div>
+                  <div class="day-actions">
+                    <button type="button" class="btn btn-primary" data-action="add-item" data-day="${day.id}">+ Thêm địa điểm</button>
+                    <button type="button" class="btn btn-danger" data-action="delete-day" data-day="${day.id}">Xóa ngày</button>
+                  </div>
+                </div>
+                <div class="day-places">${itemsHtml || "<div style='color:var(--text-secondary);'>Chưa có địa điểm.</div>"}</div>
+              </div>`;
+          })
+          .join("");
+
+        itineraryDays
+          .querySelectorAll("button[data-action='add-item']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openItineraryItemModal(btn.dataset.day),
+            );
+          });
+        itineraryDays
+          .querySelectorAll("button[data-action='delete-day']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => deleteDay(btn.dataset.day));
+          });
+        itineraryDays
+          .querySelectorAll("button[data-action='remove-item']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              removeItineraryItem(btn.dataset.day, btn.dataset.item),
+            );
+          });
+        itineraryDays
+          .querySelectorAll("button[data-action='up']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              moveItineraryItem(btn.dataset.day, btn.dataset.item, -1),
+            );
+          });
+        itineraryDays
+          .querySelectorAll("button[data-action='down']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              moveItineraryItem(btn.dataset.day, btn.dataset.item, 1),
+            );
+          });
+        itineraryDays
+          .querySelectorAll("button[data-action='toggle-day']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              toggleItineraryDay(btn.dataset.day),
+            );
+          });
+        itineraryDays
+          .querySelectorAll("button[data-action='view-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const catId = btn.dataset.category;
+              const placeId = btn.dataset.place;
+              closeModal(itineraryModal);
+              openPlaceDetail(catId, placeId, false);
+            });
+          });
+      }
+
+      function addDay() {
+        const trip = getTrip(selectedTripId);
+        const value = prompt("Số ngày (ví dụ: 1):");
+        const number = Number(value);
+        if (!number || isNaN(number) || number < 1) return;
+        if (trip.itineraryDays.some((day) => day.number === number)) {
+          alert("Ngày này đã tồn tại.");
+          return;
+        }
+        trip.itineraryDays.push({ id: uuid(), number, items: [] });
+        saveState();
+        renderItinerary();
+        renderStats(trip);
+      }
+
+      function deleteDay(dayId) {
+        if (!confirm("Xóa ngày này?")) return;
+        const trip = getTrip(selectedTripId);
+        trip.itineraryDays = trip.itineraryDays.filter(
+          (day) => day.id !== dayId,
+        );
+        saveState();
+        renderItinerary();
+        renderStats(trip);
+      }
+
+      function moveItineraryItem(dayId, itemId, direction) {
+        const trip = getTrip(selectedTripId);
+        const day = trip.itineraryDays.find((day) => day.id === dayId);
+        if (!day) return;
+        const index = day.items.findIndex((item) => item.id === itemId);
+        if (index < 0) return;
+        const target = index + direction;
+        if (target < 0 || target >= day.items.length) return;
+        [day.items[index], day.items[target]] = [
+          day.items[target],
+          day.items[index],
+        ];
+        saveState();
+        renderItinerary();
+      }
+
+      function removeItineraryItem(dayId, itemId) {
+        if (!confirm("Xóa mục này khỏi ngày?")) return;
+        const trip = getTrip(selectedTripId);
+        const day = trip.itineraryDays.find((day) => day.id === dayId);
+        if (!day) return;
+        day.items = day.items.filter((item) => item.id !== itemId);
+        saveState();
+        renderItinerary();
+      }
+
+      function toggleItineraryDay(dayId) {
+        if (collapsedDays.has(dayId)) collapsedDays.delete(dayId);
+        else collapsedDays.add(dayId);
+        // persist per-trip collapsed days
+        const trip = getTrip(selectedTripId);
+        if (trip) {
+          trip.collapsedDays = Array.from(collapsedDays);
+          saveState();
+        }
+        renderItinerary();
+      }
+
+      function openItineraryItemModal(dayId) {
+        const trip = getTrip(selectedTripId);
+        const categories = trip.categories || [];
+        if (!categories.length) {
+          alert("Hãy tạo danh mục trước.");
+          return;
+        }
+        currentDayId = dayId;
+        editingItineraryItemId = null;
+        itemCategorySelect.innerHTML = categories
+          .map(
+            (category) =>
+              `<option value="${category.id}">${category.name}</option>`,
+          )
+          .join("");
+        renderItineraryPlaceOptions();
+        itemNoteInput.value = "";
+        itineraryItemModal.querySelector(".modal-title").textContent =
+          "Thêm mục vào ngày";
+        openModal(itineraryItemModal);
+      }
+
+      function renderItineraryPlaceOptions() {
+        const trip = getTrip(selectedTripId);
+        const category = getCategory(trip, itemCategorySelect.value);
+        const places = category?.places || [];
+        itemPlaceSelect.innerHTML = places
+          .map((place) => `<option value="${place.id}">${place.name}</option>`)
+          .join("");
+      }
+
+      function saveItineraryItem() {
+        const trip = getTrip(selectedTripId);
+        const day = trip.itineraryDays.find((day) => day.id === currentDayId);
+        if (!day) return;
+        const categoryId = itemCategorySelect.value;
+        const placeId = itemPlaceSelect.value;
+        if (!categoryId || !placeId) {
+          alert("Chọn danh mục và địa điểm.");
+          return;
+        }
+        if (editingItineraryItemId) {
+          const item = day.items.find(
+            (item) => item.id === editingItineraryItemId,
+          );
+          if (item) {
+            item.categoryId = categoryId;
+            item.placeId = placeId;
+            item.note = itemNoteInput.value.trim();
+          }
+        } else {
+          day.items.push({
+            id: uuid(),
+            categoryId,
+            placeId,
+            note: itemNoteInput.value.trim(),
+          });
+        }
+        saveState();
+        renderItinerary();
+        closeModal(itineraryItemModal);
+      }
+
+      function exportData() {
+        const payload = JSON.stringify(state, null, 2);
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "travel-planner-data.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function compressImage(file) {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              const maxWidth = 1200;
+              const scale = Math.min(1, maxWidth / img.width);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              resolve(canvas.toDataURL("image/jpeg", 0.75));
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      btnAddTrip.addEventListener("click", () => openTripModal());
+      closeTripModal.addEventListener("click", () => closeModal(tripModal));
+      cancelTripBtn.addEventListener("click", () => closeModal(tripModal));
+      saveTripBtn.addEventListener("click", () => {
+        if (editingTripId) updateTrip();
+        else createTrip();
+      });
+
+      btnAddCategory.addEventListener("click", () => openCategoryModal());
+      closeCategoryModal.addEventListener("click", () =>
+        closeModal(categoryModal),
+      );
+      cancelCategoryBtn.addEventListener("click", () =>
+        closeModal(categoryModal),
+      );
+      saveCategoryBtn.addEventListener("click", () => {
+        if (editingCategoryId) updateCategory();
+        else createCategory();
+      });
+
+      closePlaceModal.addEventListener("click", () => closeModal(placeModal));
+      cancelPlaceBtn.addEventListener("click", () => closeModal(placeModal));
+      savePlaceBtn.addEventListener("click", () => {
+        if (editingPlaceId) updatePlace();
+        else createPlace();
+      });
+
+      closePlaceDetailBtn.addEventListener("click", () =>
+        closeModal(placeDetailModal),
+      );
+      closeItineraryModal.addEventListener("click", () =>
+        closeModal(itineraryModal),
+      );
+      btnAddDay.addEventListener("click", addDay);
+      btnOpenItinerary.addEventListener("click", openItineraryModal);
+      btnExportData.addEventListener("click", exportData);
+
+      closeItineraryItemModal.addEventListener("click", () =>
+        closeModal(itineraryItemModal),
+      );
+      cancelItineraryItemBtn.addEventListener("click", () =>
+        closeModal(itineraryItemModal),
+      );
+      saveItineraryItemBtn.addEventListener("click", saveItineraryItem);
+      itemCategorySelect.addEventListener(
+        "change",
+        renderItineraryPlaceOptions,
+      );
+
+      viewerPrev.addEventListener("click", () => moveViewer(-1));
+      viewerNext.addEventListener("click", () => moveViewer(1));
+      imageViewer.addEventListener("click", (event) => {
+        if (event.target === imageViewer) closeModal(imageViewer);
+      });
+      placeDetailModal.addEventListener(
+        "touchstart",
+        handlePlaceDetailTouchStart,
+        { passive: true },
+      );
+      placeDetailModal.addEventListener("touchend", handlePlaceDetailTouchEnd, {
+        passive: true,
+      });
+      document.addEventListener("keydown", (event) => {
+        if (imageViewer.classList.contains("show")) {
+          if (event.key === "ArrowLeft") moveViewer(-1);
+          if (event.key === "ArrowRight") moveViewer(1);
+          if (event.key === "Escape") closeModal(imageViewer);
+          return;
+        }
+        if (placeDetailModal.classList.contains("show")) {
+          if (event.key === "ArrowLeft") navigatePlaceDetail(-1);
+          if (event.key === "ArrowRight") navigatePlaceDetail(1);
+          if (event.key === "Escape") closeModal(placeDetailModal);
+        }
+      });
+
+      categorySearch.addEventListener("input", () => renderDashboard());
+      btnRefreshData.addEventListener("click", () => refreshSharedState());
+
+      btnDarkMode.addEventListener("click", () => {
+        document.body.classList.toggle("dark");
+        const dark = document.body.classList.contains("dark");
+        localStorage.setItem(DARK_MODE_KEY, dark ? "true" : "false");
+        btnDarkMode.textContent = dark ? "☀️" : "🌙";
+      });
+
+      window.openPlaceDetail = openPlaceDetail;
+      window.openPlaceModal = openPlaceModal;
+      window.deletePlace = deletePlace;
+      window.openItineraryItemModal = openItineraryItemModal;
+      window.openImageViewer = openImageViewer;
+
+      async function setupInitialView() {
+        await initSupabase();
+        await loadState();
+        renderTrips();
+        if (!selectedTripId && state.trips.length) {
+          selectedTripId = state.trips[0].id;
+          saveSelectedTrip();
+        }
+        renderDashboard();
+      }
+
+      setupInitialView();
+    </script>
+  </body>
+</html>
