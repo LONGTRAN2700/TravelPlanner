@@ -1503,7 +1503,7 @@
         }
       }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   </head>
   <body>
     <div class="app">
@@ -3162,6 +3162,14 @@
           return;
         }
 
+        // Check if XLSX library is loaded
+        if (typeof XLSX === "undefined") {
+          alert(
+            "Thư viện xuất Excel đang tải. Vui lòng thử lại trong vài giây.",
+          );
+          return;
+        }
+
         const btnExport = document.getElementById("btnExportData");
         const originalText = btnExport.textContent;
         btnExport.disabled = true;
@@ -3182,44 +3190,65 @@
             sheetData.push([]);
 
             // Categories and Places
-            trip.categories.forEach((category, catIdx) => {
-              sheetData.push([
-                `${category.icon || "📌"} ${category.name} (${(category.places || []).length} địa điểm)`,
-              ]);
-              sheetData.push([]);
-
-              (category.places || []).forEach((place, placeIdx) => {
+            if (trip.categories && trip.categories.length > 0) {
+              trip.categories.forEach((category) => {
+                if (!category) return;
                 sheetData.push([
-                  placeIdx + 1,
-                  place.name,
-                  `⭐ ${place.rating || "-"}`,
-                  place.price || "-",
-                  place.images.length,
-                  place.tags ? place.tags.join(", ") : "-",
+                  `${category.icon || "📌"} ${category.name} (${(category.places || []).length} địa điểm)`,
                 ]);
-                if (place.description) {
-                  sheetData.push(["", `Mô tả: ${place.description}`]);
-                }
-              });
+                sheetData.push([]);
 
-              sheetData.push([]);
-              sheetData.push([]);
-            });
+                const places = category.places || [];
+                places.forEach((place, placeIdx) => {
+                  if (!place) return;
+                  sheetData.push([
+                    placeIdx + 1,
+                    place.name || "",
+                    `⭐ ${place.rating || "-"}`,
+                    place.price || "-",
+                    place.images ? place.images.length : 0,
+                    place.tags && Array.isArray(place.tags)
+                      ? place.tags.join(", ")
+                      : "-",
+                  ]);
+                  if (place.description) {
+                    sheetData.push(["", `Mô tả: ${place.description}`]);
+                  }
+                });
+
+                sheetData.push([]);
+                sheetData.push([]);
+              });
+            }
 
             // Itinerary
             if (trip.itineraryDays && trip.itineraryDays.length > 0) {
               sheetData.push([]);
-              sheetData.push(["LỊCH TRÌNH"]);
+              sheetData.push(["LICH TRINH"]);
               sheetData.push([]);
 
               trip.itineraryDays.forEach((day) => {
-                sheetData.push([`📅 ${day.name}`]);
-                (day.items || []).forEach((item, idx) => {
-                  const place = trip.categories
-                    .find((c) => c.id === item.categoryId)
-                    ?.places.find((p) => p.id === item.placeId);
+                if (!day) return;
+                sheetData.push([`Ngay: ${day.name}`]);
+                const items = day.items || [];
+                items.forEach((item, idx) => {
+                  if (!item) return;
+                  let placeName = "N/A";
+                  try {
+                    const cat = trip.categories.find(
+                      (c) => c && c.id === item.categoryId,
+                    );
+                    if (cat && cat.places) {
+                      const p = cat.places.find(
+                        (pl) => pl && pl.id === item.placeId,
+                      );
+                      if (p) placeName = p.name;
+                    }
+                  } catch (e) {
+                    console.warn("Error finding place:", e);
+                  }
                   sheetData.push([
-                    `${idx + 1}. ${place?.name || "N/A"}`,
+                    `${idx + 1}. ${placeName}`,
                     item.note || "-",
                   ]);
                 });
@@ -3229,47 +3258,24 @@
 
             const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
 
-            // Styling
-            const headerStyle = {
-              font: { bold: true, size: 16, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "2563EB" } },
-              alignment: { horizontal: "left", vertical: "center" },
-            };
-
-            const categoryStyle = {
-              font: { bold: true, size: 13, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "3B82F6" } },
-              alignment: { horizontal: "left", vertical: "center" },
-            };
-
-            const itineraryTitleStyle = {
-              font: { bold: true, size: 12, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "10B981" } },
-              alignment: { horizontal: "left", vertical: "center" },
-            };
-
-            // Apply header style to title
-            worksheet["A1"] = {
-              ...worksheet["A1"],
-              s: headerStyle,
-            };
-
-            // Auto column width
-            const maxWidth = 50;
+            // Simple styling - using basic approach
             worksheet["!cols"] = [
               { wch: 5 },
-              { wch: 25 },
+              { wch: 30 },
               { wch: 12 },
               { wch: 12 },
               { wch: 8 },
-              { wch: maxWidth },
+              { wch: 40 },
             ];
 
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Travel Plan");
-            XLSX.writeFile(workbook, `${trip.name}-lich-trinh.xlsx`);
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Travel_Plan");
+
+            // Use ASCII filename to avoid encoding issues
+            const fileName = `${trip.name.replace(/[^a-z0-9]/gi, "_")}_lich_trinh.xlsx`;
+            XLSX.writeFile(workbook, fileName);
 
             // Success feedback
-            btnExport.textContent = "✓ Đã xuất";
+            btnExport.textContent = "✓ Da xuat";
             setTimeout(() => {
               btnExport.textContent = originalText;
               btnExport.disabled = false;
@@ -3277,7 +3283,10 @@
             }, 1500);
           } catch (error) {
             console.error("Export error:", error);
-            alert("Lỗi xuất file. Vui lòng thử lại.");
+            alert(
+              "Loi xuat file. Vui long thu lai.\n\nLoi chi tiet: " +
+                error.message,
+            );
             btnExport.textContent = originalText;
             btnExport.disabled = false;
             btnExport.style.opacity = "1";
