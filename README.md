@@ -13,43 +13,63 @@
 - ✅ **Đồng bộ thời gian thực**: Tự động cập nhật khi có thay đổi từ bạn bè
 - ✅ **Chế độ tối**: Hỗ trợ dark mode
 - ✅ **Responsive**: Hoạt động trên desktop, tablet, mobile
+- ✅ **Backend Server**: Express.js server cho độ ổn định cao (NEW)
 
 ## 🚀 Deployment
 
-### Cách 1: Deploy lên Netlify (Dễ nhất)
+### Frontend - Deploy lên GitHub Pages (Miễn Phí)
 
-1. **Tạo tài khoản GitHub** nếu chưa có
-2. **Push code lên GitHub**:
+Xem chi tiết tại `DEPLOYMENT.md`
 
-   ```bash
-   cd c:\Users\dell\Downloads\travel-planner-project
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/<your-username>/<repo-name>.git
-   git branch -M main
-   git push -u origin main
-   ```
+### Backend - Deploy lên Railway/Render
 
-3. **Đăng ký Netlify** tại https://app.netlify.com
-4. **Click "New site from Git"**
-   - Chọn GitHub
-   - Chọn repository
-   - Build command: (để trống)
-   - Publish directory: (để trống - sẽ dùng root)
-   - Click **Deploy**
+Xem chi tiết tại `SERVER_SETUP.md`
 
-5. **Sau vài phút**, Netlify sẽ cấp cho bạn URL công khai
+## 🚀 Quick Start (Local Development)
 
-### Cách 2: Deploy bằng Netlify Drop (Nhanh)
+### 1. Start Backend Server
 
-1. Vào https://app.netlify.com/drop
-2. Kéo thả folder `travel-planner-project` vào
-3. Netlify sẽ tự động publish
+```bash
+cd server
+npm install              # First time only
+npm run dev             # Start server (auto-reload)
+```
+
+**Expected output:**
+
+```
+🚀 Travel Planner Server running on http://localhost:3000
+📝 Environment: development
+✅ Health check: http://localhost:3000/health
+```
+
+### 2. Open Frontend
+
+In a new terminal or browser:
+
+```
+file:///c:/Users/dell/Downloads/travel-planner-project/index.html
+```
+
+**Or** use VS Code Live Server extension
+
+### 3. Test It
+
+- ✅ Add trip, category, place
+- ✅ Upload image
+- ✅ Refresh page → Data persists
+- ✅ All features work!
+
+### 📚 Documentation
+
+- `QUICK_START_SERVER.md` - Server quick start
+- `SERVER_SETUP.md` - Complete server guide
+- `DEPLOYMENT.md` - GitHub Pages deployment
+- `IMPLEMENTATION_SUMMARY.md` - Technical overview
+
+---
 
 ## ⚙️ Cấu Hình Supabase (Bắt Buộc)
-
-Để chia sẻ dữ liệu chung:
 
 1. **Vào Supabase** tại https://app.supabase.com
 2. **Tạo project** hoặc sử dụng project đã tạo
