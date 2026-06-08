@@ -1411,7 +1411,6 @@
         }
       }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
   </head>
   <body>
     <div class="app">
@@ -1753,9 +1752,7 @@
       const SUPABASE_TABLE = "travel_planner_state";
       const STATE_ROW_ID = 1;
 
-      const supabase = window.supabase
-        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-        : null;
+      // Không cần client SDK, dùng REST API trực tiếp
 
       const tripList = document.getElementById("tripList");
       const btnAddTrip = document.getElementById("btnAddTrip");
@@ -1858,8 +1855,8 @@
       let placeDetailShowNav = true;
       let placeDetailTouchStartX = null;
       let supabaseConnected = false;
-      let supabaseChannel = null;
       let lastLocalStateSignature = "";
+      let syncCheckInterval = null;
 
       function uuid() {
         return (
@@ -1879,7 +1876,6 @@
 
       async function initSupabase() {
         if (
-          !supabase ||
           SUPABASE_URL.includes("YOUR_") ||
           SUPABASE_ANON_KEY.includes("YOUR_")
         ) {
@@ -1890,71 +1886,61 @@
         updateSyncStatus("Đang kết nối Supabase...");
 
         try {
-          const { data, error } = await supabase
-            .from(SUPABASE_TABLE)
-            .select("id")
-            .eq("id", STATE_ROW_ID)
-            .maybeSingle();
+          const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${STATE_ROW_ID}`,
+            {
+              method: "GET",
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                "Content-Type": "application/json",
+              },
+            },
+          );
 
-          if (error) throw error;
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
           supabaseConnected = true;
           updateSyncStatus("Đã kết nối Supabase");
-          await ensureStateRow(data?.id);
-          subscribeToStateUpdates();
+          startSyncCheck();
         } catch (err) {
-          console.warn("Supabase init failed:", err.message || err);
+          console.warn("Supabase init failed:", err.message);
           supabaseConnected = false;
           updateSyncStatus("Không kết nối Supabase", true);
         }
       }
 
-      async function ensureStateRow(existingId) {
-        if (!supabaseConnected) return;
-        if (existingId) return;
-
-        try {
-          const { error } = await supabase.from(SUPABASE_TABLE).insert({
-            id: STATE_ROW_ID,
-            data: state,
-          });
-          if (error) throw error;
-        } catch (err) {
-          console.warn("Supabase ensure row failed:", err.message || err);
-        }
-      }
-
-      function subscribeToStateUpdates() {
-        if (!supabaseConnected || !supabase?.channel) return;
-        if (supabaseChannel) return;
-
-        const channel = supabase.channel("travel_planner_state_channel");
-
-        channel.on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: SUPABASE_TABLE,
-            filter: `id=eq.${STATE_ROW_ID}`,
-          },
-          (payload) => {
-            const incoming = payload.record?.data;
-            if (!incoming) return;
-            const incomingSignature = JSON.stringify(incoming);
+      function startSyncCheck() {
+        if (syncCheckInterval) clearInterval(syncCheckInterval);
+        syncCheckInterval = setInterval(async () => {
+          if (!supabaseConnected) return;
+          try {
+            const response = await fetch(
+              `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${STATE_ROW_ID}`,
+              {
+                method: "GET",
+                headers: {
+                  apikey: SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                },
+              },
+            );
+            if (!response.ok) return;
+            const data = await response.json();
+            if (!data[0]?.data) return;
+            const incomingSignature = JSON.stringify(data[0].data);
             if (incomingSignature === lastLocalStateSignature) return;
-            state = incoming;
+            state = data[0].data;
             selectedTripId =
               selectedTripId && getTrip(selectedTripId)
                 ? selectedTripId
                 : state.trips[0]?.id || null;
             renderTrips();
             renderDashboard();
-            updateSyncStatus("Đã cập nhật dữ liệu mới từ bạn bè");
-          },
-        );
-
-        channel.subscribe();
-        supabaseChannel = channel;
+            updateSyncStatus("Đã cập nhật dữ liệu từ Supabase");
+          } catch (err) {
+            console.warn("Sync check failed:", err.message);
+          }
+        }, 3000);
       }
 
       async function loadState() {
@@ -1965,15 +1951,21 @@
 
         if (supabaseConnected) {
           try {
-            const { data, error } = await supabase
-              .from(SUPABASE_TABLE)
-              .select("data")
-              .eq("id", STATE_ROW_ID)
-              .maybeSingle();
-            if (error) throw error;
-            state = data?.data || { trips: [] };
+            const response = await fetch(
+              `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${STATE_ROW_ID}`,
+              {
+                method: "GET",
+                headers: {
+                  apikey: SUPABASE_ANON_KEY,
+                  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                },
+              },
+            );
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            state = data[0]?.data || { trips: [] };
           } catch (err) {
-            console.warn("Supabase load failed:", err.message || err);
+            console.warn("Supabase load failed:", err.message);
             updateSyncStatus("Tải dữ liệu Supabase thất bại", true);
             fallbackLoad();
           }
@@ -2008,19 +2000,28 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         lastLocalStateSignature = JSON.stringify(state);
 
-        if (supabaseConnected) {
-          updateSyncStatus("Đang đồng bộ dữ liệu...");
-          try {
-            const { error } = await supabase.from(SUPABASE_TABLE).upsert({
-              id: STATE_ROW_ID,
-              data: state,
-            });
-            if (error) throw error;
-            updateSyncStatus("Đã đồng bộ dữ liệu");
-          } catch (err) {
-            console.warn("Supabase save failed:", err.message || err);
-            updateSyncStatus("Lưu Supabase thất bại", true);
-          }
+        if (!supabaseConnected) return;
+
+        updateSyncStatus("Đang đồng bộ dữ liệu...");
+        try {
+          const response = await fetch(
+            `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${STATE_ROW_ID}`,
+            {
+              method: "PATCH",
+              headers: {
+                apikey: SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                "Content-Type": "application/json",
+                Prefer: "return=minimal",
+              },
+              body: JSON.stringify({ data: state }),
+            },
+          );
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          updateSyncStatus("Đã đồng bộ dữ liệu");
+        } catch (err) {
+          console.warn("Supabase save failed:", err.message);
+          updateSyncStatus("Lưu Supabase thất bại", true);
         }
       }
 
