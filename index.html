@@ -1940,6 +1940,7 @@
       let galleryImages = [];
       let currentGalleryIndex = 0;
       let collapsedDays = new Set();
+      let collapsedCategories = new Set();
       let placeDetailShowNav = true;
       let placeDetailTouchStartX = null;
       let supabaseConnected = false;
@@ -2202,6 +2203,10 @@
         tripDescriptionHero.textContent = trip.description || "Chưa có mô tả";
         btnAddCategory.disabled = false;
         btnOpenItinerary.disabled = false;
+
+        // Restore collapsed categories state
+        collapsedCategories = new Set(trip.collapsedCategories || []);
+
         renderStats(trip);
         renderCategories(trip);
       }
@@ -2253,11 +2258,14 @@
               .join("");
             return `
             <div class="category-card">
-              <div>
-                <h3><span>${category.icon || "📌"}</span>${category.name}</h3>
-                <p>${places.length} địa điểm</p>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                <div>
+                  <h3><span>${category.icon || "📌"}</span>${category.name}</h3>
+                  <p>${places.length} địa điểm</p>
+                </div>
+                <button type="button" class="btn btn-secondary" data-action="toggle-category" data-id="${category.id}" style="white-space:nowrap;padding:8px 10px;font-size:14px;">${collapsedCategories.has(category.id) ? "▸" : "▾"}</button>
               </div>
-              ${placePreview ? `<div class="place-summary">${placePreview}</div>` : "<p style='color:var(--text-secondary);'>Chưa thêm địa điểm nào.</p>"}
+              ${collapsedCategories.has(category.id) ? "" : placePreview ? `<div class="place-summary">${placePreview}</div>` : "<p style='color:var(--text-secondary);'>Chưa thêm địa điểm nào.</p>"}
               <div class="category-actions">
                 <button type="button" class="btn btn-primary" data-action="add-place" data-id="${category.id}">+ Thêm địa điểm</button>
                 <button type="button" class="btn btn-secondary" data-action="edit-category" data-id="${category.id}">Sửa</button>
@@ -2304,6 +2312,20 @@
             btn.addEventListener("click", () =>
               deletePlace(btn.dataset.category, btn.dataset.place),
             );
+          });
+        categoryGrid
+          .querySelectorAll("button[data-action='toggle-category']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const categoryId = btn.dataset.id;
+              if (collapsedCategories.has(categoryId)) {
+                collapsedCategories.delete(categoryId);
+              } else {
+                collapsedCategories.add(categoryId);
+              }
+              const trip = getTrip(selectedTripId);
+              renderCategories(trip);
+            });
           });
       }
 
