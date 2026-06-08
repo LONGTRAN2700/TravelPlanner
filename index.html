@@ -671,6 +671,7 @@
         -webkit-overflow-scrolling: touch;
         width: 100%;
         flex-wrap: nowrap;
+        touch-action: pan-x;
       }
 
       .gallery-grid::-webkit-scrollbar {
@@ -2664,11 +2665,35 @@
 
       function handlePlaceDetailTouchStart(event) {
         if (!placeDetailModal.classList.contains("show")) return;
+
+        // Ignore touch events that start from gallery grid or gallery items
+        const galleryGrid = document.getElementById("galleryGrid");
+        const target = event.target;
+        if (
+          galleryGrid &&
+          (target === galleryGrid || galleryGrid.contains(target))
+        ) {
+          placeDetailTouchStartX = null;
+          return;
+        }
+
         placeDetailTouchStartX = event.changedTouches[0].clientX;
       }
 
       function handlePlaceDetailTouchEnd(event) {
         if (placeDetailTouchStartX === null) return;
+
+        // Double-check that we're not in gallery
+        const galleryGrid = document.getElementById("galleryGrid");
+        const target = event.target;
+        if (
+          galleryGrid &&
+          (target === galleryGrid || galleryGrid.contains(target))
+        ) {
+          placeDetailTouchStartX = null;
+          return;
+        }
+
         const touchEndX = event.changedTouches[0].clientX;
         const diff = touchEndX - placeDetailTouchStartX;
         placeDetailTouchStartX = null;
