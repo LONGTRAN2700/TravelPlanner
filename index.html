@@ -1093,6 +1093,22 @@
           font-size: 14px;
         }
 
+        .trip-toolbar {
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+
+        .search-box {
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .trip-toolbar .btn {
+          padding: 10px 14px;
+          font-size: 13px;
+        }
+
         .stats {
           grid-template-columns: repeat(2, 1fr);
           gap: 12px;
@@ -1113,13 +1129,22 @@
         }
 
         .trip-toolbar {
-          flex-direction: column;
-          gap: 10px;
+          flex-direction: row;
+          gap: 8px;
+          justify-content: space-between;
+          align-items: center;
         }
 
         .search-box {
           min-width: unset;
-          width: 100%;
+          flex: 0 0 auto;
+        }
+
+        .trip-toolbar .btn {
+          flex: 1;
+          min-width: 100px;
+          padding: 10px 8px;
+          font-size: 12px;
         }
 
         .section-title {
