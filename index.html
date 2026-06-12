@@ -2018,6 +2018,9 @@
 
       function startSyncCheck() {
         if (syncCheckInterval) clearInterval(syncCheckInterval);
+        // FIXED: Increased from 3000ms to 30000ms to reduce memory pressure
+        // 30 seconds is still responsive for multi-device sync
+        // This was causing 10+ fetch calls per minute leading to massive re-renders and listener buildup
         syncCheckInterval = setInterval(async () => {
           if (!supabaseConnected) return;
           try {
@@ -2047,7 +2050,7 @@
           } catch (err) {
             console.warn("Sync check failed:", err.message);
           }
-        }, 3000);
+        }, 30000);
       }
 
       async function loadState() {
@@ -2170,41 +2173,10 @@
           })
           .join("");
 
-        tripList.querySelectorAll(".trip-card").forEach((card) => {
-          card.addEventListener("click", () => {
-            selectTrip(card.dataset.id);
-          });
-        });
-
-        tripList
-          .querySelectorAll("button[data-action='edit']")
-          .forEach((btn) => {
-            btn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              openTripModal(btn.dataset.id);
-            });
-          });
-
-        tripList
-          .querySelectorAll("button[data-action='delete']")
-          .forEach((btn) => {
-            btn.addEventListener("click", async (e) => {
-              e.stopPropagation();
-              const id = btn.dataset.id;
-              if (confirm("Xóa địa điểm du lịch này?")) {
-                state.trips = state.trips.filter((trip) => trip.id !== id);
-                if (selectedTripId === id) {
-                  selectedTripId = state.trips.length
-                    ? state.trips[0].id
-                    : null;
-                  saveSelectedTrip();
-                }
-                saveState();
-                renderTrips();
-                renderDashboard();
-              }
-            });
-          });
+        // FIXED: Removed forEach listener registration (MAJOR MEMORY LEAK)
+        // Event listeners are now delegated via setupTripListDelegation()
+        // This eliminates duplicate listener registration every 3 seconds
+      }
       }
 
       function renderDashboard() {
@@ -2292,62 +2264,62 @@
           })
           .join("");
 
-        categoryGrid
-          .querySelectorAll("button[data-action='add-place']")
-          .forEach((btn) => {
-            btn.addEventListener("click", () => openPlaceModal(btn.dataset.id));
-          });
-        categoryGrid
-          .querySelectorAll("button[data-action='edit-category']")
-          .forEach((btn) => {
-            btn.addEventListener("click", () =>
-              openCategoryModal(btn.dataset.id),
-            );
-          });
-        categoryGrid
-          .querySelectorAll("button[data-action='delete-category']")
-          .forEach((btn) => {
-            btn.addEventListener("click", () => deleteCategory(btn.dataset.id));
-          });
-        categoryGrid
-          .querySelectorAll("button[data-action='view-place']")
-          .forEach((btn) => {
-            btn.addEventListener("click", () =>
-              openPlaceDetail(btn.dataset.category, btn.dataset.place),
-            );
-          });
-        categoryGrid
-          .querySelectorAll("button[data-action='edit-place']")
-          .forEach((btn) => {
-            btn.addEventListener("click", () =>
-              openPlaceModal(btn.dataset.category, btn.dataset.place),
-            );
-          });
-        categoryGrid
-          .querySelectorAll("button[data-action='delete-place']")
-          .forEach((btn) => {
-            btn.addEventListener("click", () =>
-              deletePlace(btn.dataset.category, btn.dataset.place),
-            );
-          });
-        categoryGrid
-          .querySelectorAll("button[data-action='toggle-category']")
-          .forEach((btn) => {
-            btn.addEventListener("click", () => {
-              const categoryId = btn.dataset.id;
-              if (collapsedCategories.has(categoryId)) {
-                collapsedCategories.delete(categoryId);
-              } else {
-                collapsedCategories.add(categoryId);
-              }
-              const trip = getTrip(selectedTripId);
-              if (trip) {
-                trip.collapsedCategories = Array.from(collapsedCategories);
-                saveState();
-              }
-              renderCategories(trip);
-            });
-          });
+        // FIXED: Removed forEach listener registration (MAJOR MEMORY LEAK)
+        // Event listeners are now delegated via setupCategoryGridDelegation()
+        // This eliminates duplicate listener registration every 3 seconds
+      }
+
+      // FIXED: Setup event delegation for category grid - called ONCE at init
+      // This eliminates the memory leak caused by adding event listeners in renderCategories()
+      function setupCategoryGridDelegation() {
+        categoryGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='add-place']");
+          if (btn) openPlaceModal(btn.dataset.id);
+        });
+
+        categoryGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='edit-category']");
+          if (btn) openCategoryModal(btn.dataset.id);
+        });
+
+        categoryGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='delete-category']");
+          if (btn) deleteCategory(btn.dataset.id);
+        });
+
+        categoryGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='view-place']");
+          if (btn) openPlaceDetail(btn.dataset.category, btn.dataset.place);
+        });
+
+        categoryGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='edit-place']");
+          if (btn) openPlaceModal(btn.dataset.category, btn.dataset.place);
+        });
+
+        categoryGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='delete-place']");
+          if (btn) deletePlace(btn.dataset.category, btn.dataset.place);
+        });
+
+        categoryGrid.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='toggle-category']");
+          if (btn) {
+            const categoryId = btn.dataset.id;
+            if (collapsedCategories.has(categoryId)) {
+              collapsedCategories.delete(categoryId);
+            } else {
+              collapsedCategories.add(categoryId);
+            }
+            const trip = getTrip(selectedTripId);
+            if (trip) {
+              trip.collapsedCategories = Array.from(collapsedCategories);
+              saveState();
+            }
+            renderCategories(trip);
+          }
+        });
+      }
       }
 
       function selectTrip(tripId) {
@@ -2356,6 +2328,45 @@
         saveSelectedTrip();
         renderTrips();
         renderDashboard();
+      }
+
+      // FIXED: Setup event delegation for trip list - called ONCE at init
+      // This eliminates the memory leak caused by adding event listeners in renderTrips()
+      function setupTripListDelegation() {
+        tripList.addEventListener("click", (e) => {
+          const card = e.target.closest(".trip-card");
+          if (card && !e.target.closest("button")) {
+            selectTrip(card.dataset.id);
+          }
+        });
+
+        tripList.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='edit']");
+          if (btn) {
+            e.stopPropagation();
+            openTripModal(btn.dataset.id);
+          }
+        });
+
+        tripList.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-action='delete']");
+          if (btn) {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            if (confirm("Xóa địa điểm du lịch này?")) {
+              state.trips = state.trips.filter((trip) => trip.id !== id);
+              if (selectedTripId === id) {
+                selectedTripId = state.trips.length
+                  ? state.trips[0].id
+                  : null;
+                saveSelectedTrip();
+              }
+              saveState();
+              renderTrips();
+              renderDashboard();
+            }
+          }
+        });
       }
 
       function openModal(modal) {
@@ -2647,12 +2658,10 @@
           <hr />
         `;
         openModal(placeDetailModal);
-        document
-          .getElementById("editPlaceDetailBtn")
-          .addEventListener("click", () => openPlaceModal(categoryId, placeId));
-        document
-          .getElementById("btnUploadGallery")
-          .addEventListener("click", uploadGalleryImages);
+
+        // FIXED: Removed addEventListener calls (memory leak)
+        // Using delegation instead via setupPlaceDetailDelegation()
+
         const uploadInput = document.getElementById("galleryUpload");
         const uploadInfo = document.getElementById("galleryFileInfo");
         if (uploadInput && uploadInfo) {
@@ -2664,13 +2673,31 @@
                 : "Chưa chọn file nào";
           });
         }
-        const prevBtn = document.getElementById("placePrevBtn");
-        const nextBtn = document.getElementById("placeNextBtn");
-        if (prevBtn)
-          prevBtn.addEventListener("click", () => navigatePlaceDetail(-1));
-        if (nextBtn)
-          nextBtn.addEventListener("click", () => navigatePlaceDetail(1));
+
         renderGallery();
+      }
+
+      // FIXED: Setup place detail modal delegation - called ONCE at init
+      function setupPlaceDetailDelegation() {
+        placeDetailModal.addEventListener("click", (e) => {
+          const btn = e.target.closest("#editPlaceDetailBtn");
+          if (btn) openPlaceModal(selectedCategoryId, selectedPlaceId);
+        });
+
+        placeDetailModal.addEventListener("click", (e) => {
+          const btn = e.target.closest("#btnUploadGallery");
+          if (btn) uploadGalleryImages();
+        });
+
+        placeDetailModal.addEventListener("click", (e) => {
+          const btn = e.target.closest("#placePrevBtn");
+          if (btn) navigatePlaceDetail(-1);
+        });
+
+        placeDetailModal.addEventListener("click", (e) => {
+          const btn = e.target.closest("#placeNextBtn");
+          if (btn) navigatePlaceDetail(1);
+        });
       }
 
       function navigatePlaceDetail(direction) {
@@ -2804,8 +2831,8 @@
         grid.innerHTML = galleryImages
           .map(
             (image, index) => `
-            <div class="gallery-item${index === 0 ? " active" : ""}">
-              <img src="${image.data}" alt="Ảnh ${index + 1}" onclick="window.openImageViewer(${index})" />
+            <div class="gallery-item${index === 0 ? " active" : ""}" data-index="${index}">
+              <img src="${image.data}" alt="Ảnh ${index + 1}" />
               <button type="button" class="btn btn-danger gallery-delete" data-index="${index}">✕</button>
             </div>
           `,
@@ -2820,23 +2847,12 @@
             `,
             )
             .join("");
-
-          indicators.querySelectorAll(".gallery-indicator").forEach((btn) => {
-            btn.addEventListener("click", () => {
-              const targetIndex = Number(btn.dataset.index);
-              const direction =
-                targetIndex > currentGalleryIndex ? "next" : "prev";
-              scrollToGalleryIndex(targetIndex);
-              setActiveGalleryIndex(targetIndex, direction);
-            });
-          });
+          // FIXED: Removed forEach listener registration (memory leak)
+          // Using delegation instead via setupGalleryDelegation()
         }
 
-        grid.querySelectorAll(".gallery-delete").forEach((btn) => {
-          btn.addEventListener("click", () =>
-            deleteGalleryImage(Number(btn.dataset.index)),
-          );
-        });
+        // FIXED: Removed forEach listener registration (memory leak)
+        // Using delegation instead via setupGalleryDelegation()
 
         grid.onscroll = () => updateGalleryActiveOnScroll(grid, indicators);
         grid.scrollLeft = 0;
@@ -2856,6 +2872,42 @@
               : "storage-info-block";
           div.innerHTML = storageWarning;
           toolbar.insertBefore(div, toolbar.firstChild);
+        }
+      }
+
+      // FIXED: Setup gallery delegation - called ONCE at init
+      function setupGalleryDelegation() {
+        const galleryGrid = document.getElementById("galleryGrid");
+        const galleryIndicators = document.getElementById("galleryIndicators");
+
+        if (galleryIndicators) {
+          galleryIndicators.addEventListener("click", (e) => {
+            const btn = e.target.closest(".gallery-indicator");
+            if (btn) {
+              const targetIndex = Number(btn.dataset.index);
+              const direction =
+                targetIndex > currentGalleryIndex ? "next" : "prev";
+              scrollToGalleryIndex(targetIndex);
+              setActiveGalleryIndex(targetIndex, direction);
+            }
+          });
+        }
+
+        if (galleryGrid) {
+          galleryGrid.addEventListener("click", (e) => {
+            const btn = e.target.closest(".gallery-delete");
+            if (btn) {
+              deleteGalleryImage(Number(btn.dataset.index));
+            }
+          });
+
+          galleryGrid.addEventListener("click", (e) => {
+            const img = e.target.closest(".gallery-item img");
+            if (img) {
+              const index = Number(img.closest(".gallery-item").dataset.index);
+              openImageViewer(index);
+            }
+          });
         }
       }
 
@@ -3657,6 +3709,13 @@
       window.openImageViewer = openImageViewer;
 
       async function setupInitialView() {
+        // Setup delegation listeners ONCE before first render
+        // This prevents the memory leak caused by repeatedly registering event listeners
+        setupTripListDelegation();
+        setupCategoryGridDelegation();
+        setupPlaceDetailDelegation();
+        setupGalleryDelegation();
+
         await initSupabase();
         await loadState();
         renderTrips();
