@@ -1993,6 +1993,9 @@
         updateSyncStatus("Đang kết nối Supabase...");
 
         try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+
           const response = await fetch(
             `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${STATE_ROW_ID}`,
             {
@@ -2002,9 +2005,11 @@
                 Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
                 "Content-Type": "application/json",
               },
+              signal: controller.signal,
             },
           );
 
+          clearTimeout(timeoutId);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           supabaseConnected = true;
           updateSyncStatus("Đã kết nối Supabase");
@@ -2185,26 +2190,27 @@
             });
           });
 
-          card.querySelectorAll("button[data-action='delete']").forEach((btn) => {
-            btn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              const id = btn.dataset.id;
-              if (confirm("Xóa địa điểm du lịch này?")) {
-                state.trips = state.trips.filter((trip) => trip.id !== id);
-                if (selectedTripId === id) {
-                  selectedTripId = state.trips.length
-                    ? state.trips[0].id
-                    : null;
-                  saveSelectedTrip();
+          card
+            .querySelectorAll("button[data-action='delete']")
+            .forEach((btn) => {
+              btn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                if (confirm("Xóa địa điểm du lịch này?")) {
+                  state.trips = state.trips.filter((trip) => trip.id !== id);
+                  if (selectedTripId === id) {
+                    selectedTripId = state.trips.length
+                      ? state.trips[0].id
+                      : null;
+                    saveSelectedTrip();
+                  }
+                  saveState();
+                  renderTrips();
+                  renderDashboard();
                 }
-                saveState();
-                renderTrips();
-                renderDashboard();
-              }
+              });
             });
-          });
         });
-      }
       }
 
       function renderDashboard() {
@@ -2293,46 +2299,68 @@
           .join("");
 
         // Restore event listeners for category actions
-        categoryGrid.querySelectorAll("button[data-action='add-place']").forEach((btn) => {
-          btn.addEventListener("click", () => openPlaceModal(btn.dataset.id));
-        });
-
-        categoryGrid.querySelectorAll("button[data-action='edit-category']").forEach((btn) => {
-          btn.addEventListener("click", () => openCategoryModal(btn.dataset.id));
-        });
-
-        categoryGrid.querySelectorAll("button[data-action='delete-category']").forEach((btn) => {
-          btn.addEventListener("click", () => deleteCategory(btn.dataset.id));
-        });
-
-        categoryGrid.querySelectorAll("button[data-action='view-place']").forEach((btn) => {
-          btn.addEventListener("click", () => openPlaceDetail(btn.dataset.category, btn.dataset.place));
-        });
-
-        categoryGrid.querySelectorAll("button[data-action='edit-place']").forEach((btn) => {
-          btn.addEventListener("click", () => openPlaceModal(btn.dataset.category, btn.dataset.place));
-        });
-
-        categoryGrid.querySelectorAll("button[data-action='delete-place']").forEach((btn) => {
-          btn.addEventListener("click", () => deletePlace(btn.dataset.category, btn.dataset.place));
-        });
-
-        categoryGrid.querySelectorAll("button[data-action='toggle-category']").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const categoryId = btn.dataset.id;
-            if (collapsedCategories.has(categoryId)) {
-              collapsedCategories.delete(categoryId);
-            } else {
-              collapsedCategories.add(categoryId);
-            }
-            const trip = getTrip(selectedTripId);
-            if (trip) {
-              trip.collapsedCategories = Array.from(collapsedCategories);
-              saveState();
-            }
-            renderCategories(trip);
+        categoryGrid
+          .querySelectorAll("button[data-action='add-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => openPlaceModal(btn.dataset.id));
           });
-        });
+
+        categoryGrid
+          .querySelectorAll("button[data-action='edit-category']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openCategoryModal(btn.dataset.id),
+            );
+          });
+
+        categoryGrid
+          .querySelectorAll("button[data-action='delete-category']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => deleteCategory(btn.dataset.id));
+          });
+
+        categoryGrid
+          .querySelectorAll("button[data-action='view-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openPlaceDetail(btn.dataset.category, btn.dataset.place),
+            );
+          });
+
+        categoryGrid
+          .querySelectorAll("button[data-action='edit-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              openPlaceModal(btn.dataset.category, btn.dataset.place),
+            );
+          });
+
+        categoryGrid
+          .querySelectorAll("button[data-action='delete-place']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () =>
+              deletePlace(btn.dataset.category, btn.dataset.place),
+            );
+          });
+
+        categoryGrid
+          .querySelectorAll("button[data-action='toggle-category']")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => {
+              const categoryId = btn.dataset.id;
+              if (collapsedCategories.has(categoryId)) {
+                collapsedCategories.delete(categoryId);
+              } else {
+                collapsedCategories.add(categoryId);
+              }
+              const trip = getTrip(selectedTripId);
+              if (trip) {
+                trip.collapsedCategories = Array.from(collapsedCategories);
+                saveState();
+              }
+              renderCategories(trip);
+            });
+          });
       }
 
       function selectTrip(tripId) {
@@ -2646,7 +2674,8 @@
         }
 
         // Restore event listeners for place detail modal actions
-        const editPlaceDetailBtn = document.getElementById("editPlaceDetailBtn");
+        const editPlaceDetailBtn =
+          document.getElementById("editPlaceDetailBtn");
         if (editPlaceDetailBtn) {
           editPlaceDetailBtn.addEventListener("click", () =>
             openPlaceModal(selectedCategoryId, selectedPlaceId),
